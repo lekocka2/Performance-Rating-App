@@ -307,6 +307,73 @@ server <- function(input, output, session) {
       RV$pastedCoeffs1}, #end table output
       options = list(ordering=F, dom='t', digits=15))
     
+    #Add additional test points
+  observe({
+    req(input$numPtsAdded)
+    if(input$numPtsAdded > 0){
+      Evap <- rep("",input$numPtsAdded)
+      Cond <- rep("",input$numPtsAdded)
+      Cap <- rep("",input$numPtsAdded)
+      Pow <- rep("",input$numPtsAdded)
+      Curr <- rep("",input$numPtsAdded)
+      MF <- rep("",input$numPtsAdded)
+      RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
+    }
+  })
+  
+    data <- reactive({
+      hot <- input$addPts
+      if (!is.null(hot)) as.data.frame(hot_to_r(hot))
+    })
+    
+    output$addPts <- renderRHandsontable({
+      rhandsontable(RV$data.in)
+    })
+    
+    #recalculate coefficients based on additional test points
+    observeEvent(input$save, { 
+      hotDF <- data()
+      #create plot values
+      evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
+      condPlot <- seq(input$minCond,input$maxCond,input$incCond)
+      numTotal1A <- length(evapPlot)*length(condPlot)
+      
+      addingDF <- data.frame(evap = numeric(numTotal1A),
+                             cond = numeric(numTotal1A)) %>%
+        mutate(evap = rep_len(evapPlot, numTotal1A),
+               cond = rep_len(condPlot, numTotal1A))
+      
+      addingDF$Capacity <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$CAP[1],
+                                  RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
+                                  RV$pastedCoeffs1$CAP[5],RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],
+                                  RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
+      addingDF$Power <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$POW[1],
+                               RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],
+                               RV$pastedCoeffs1$POW[5],RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],
+                               RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
+      addingDF$Current <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$CURR[1],
+                                 RV$pastedCoeffs1$CURR[2],RV$pastedCoeffs1$CURR[3],RV$pastedCoeffs1$CURR[4],
+                                 RV$pastedCoeffs1$CURR[5],RV$pastedCoeffs1$CURR[6],RV$pastedCoeffs1$CURR[7],
+                                 RV$pastedCoeffs1$CURR[8],RV$pastedCoeffs1$CURR[9],RV$pastedCoeffs1$CURR[10])
+      addingDF$MeasMF <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$MF[1],
+                                RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
+                                RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
+                                RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
+      #add in extra test points from inputs
+      el1 <- as.numeric(append(addingDF$evap, hotDF$Evap))
+      el2 <- as.numeric(append(addingDF$cond, hotDF$Cond))
+      el3 <- as.numeric(append(addingDF$Capacity, hotDF$Cap))
+      el4 <- as.numeric(append(addingDF$Power, hotDF$Pow))
+      el5 <- as.numeric(append(addingDF$Current, hotDF$Curr))
+      el6 <- as.numeric(append(addingDF$MF, hotDF$MF))
+      #make coefficients with lm
+      RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(el1, el2, el3)
+      RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(el1, el2, el4)
+      RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(el1, el2, el5)
+      RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(el1, el2, el6)
+      
+    })
+    
     #calculate curve % shift
     output$shiftOutput = renderText({
       
@@ -322,66 +389,7 @@ server <- function(input, output, session) {
     })
   })#end observe event
   
-  #Add additional test points
-  observe({
-    if(input$numPtsAdded > 0){
-      Evap <- rep("",input$numPtsAdded)
-      Cond <- rep("",input$numPtsAdded)
-      Cap <- rep("",input$numPtsAdded)
-      Pow <- rep("",input$numPtsAdded)
-      Curr <- rep("",input$numPtsAdded)
-      MF <- rep("",input$numPtsAdded)
-      RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
-      
-      output$addPts <- renderRHandsontable({
-        rhandsontable(RV$data.in, rowHeaders = NULL)
-      })
-    } 
-  })
   
-  #recalculate coefficients based on additional test points
-  observeEvent(input$save, {
-    
-    #create plot values
-    evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-    condPlot <- seq(input$minCond,input$maxCond,input$incCond)
-    numTotal1A <- length(evapPlot)*length(condPlot)
-    
-    addingDF <- data.frame(evap = numeric(numTotal1A),
-                           cond = numeric(numTotal1A)) %>%
-      mutate(evap = rep_len(evapPlot, numTotal1A),
-             cond = rep_len(condPlot, numTotal1A))
-    
-    tempCoeff <- isolate(RV$pastedCoeffs1)
-    addingDF$Capacity <- mapply(perfCoeff,addingDF$evap,addingDF$cond,tempCoeff$CAP[1],
-                                tempCoeff$CAP[2],tempCoeff$CAP[3],tempCoeff$CAP[4],
-                                tempCoeff$CAP[5],tempCoeff$CAP[6],tempCoeff$CAP[7],
-                                tempCoeff$CAP[8],tempCoeff$CAP[9],tempCoeff$CAP[10])
-    addingDF$Power <- mapply(perfCoeff,addingDF$evap,addingDF$cond,tempCoeff$POW[1],
-                             tempCoeff$POW[2],tempCoeff$POW[3],tempCoeff$POW[4],
-                             tempCoeff$POW[5],tempCoeff$POW[6],tempCoeff$POW[7],
-                             tempCoeff$POW[8],tempCoeff$POW[9],tempCoeff$POW[10])
-    addingDF$Current <- mapply(perfCoeff,addingDF$evap,addingDF$cond,tempCoeff$CURR[1],
-                               tempCoeff$CURR[2],tempCoeff$CURR[3],tempCoeff$CURR[4],
-                               tempCoeff$CURR[5],tempCoeff$CURR[6],tempCoeff$CURR[7],
-                               tempCoeff$CURR[8],tempCoeff$CURR[9],tempCoeff$CURR[10])
-    addingDF$MeasMF <- mapply(perfCoeff,addingDF$evap,addingDF$cond,tempCoeff$MF[1],
-                                    tempCoeff$MF[2],tempCoeff$MF[3],tempCoeff$MF[4],
-                                    tempCoeff$MF[5],tempCoeff$MF[6],tempCoeff$MF[7],
-                                    tempCoeff$MF[8],tempCoeff$MF[9],tempCoeff$MF[10])
-    
-    #add in extra test points from inputs
-    
-    
-    #make coefficients with lm
-    tempCoeff$Capacity <- makeCoefficientsWithLM(addingDF$evap, addingDF$cond, addingDF$Capacity)
-    tempCoeff$newCoef1B$Power <- makeCoefficientsWithLM(addingDF$evap, addingDF$cond, addingDF$Power)
-    tempCoeff$Current <- makeCoefficientsWithLM(addingDF$evap, addingDF$cond, addingDF$Current)
-    tempCoeff$MeasMF <- makeCoefficientsWithLM(addingDF$evap, addingDF$cond, addingDF$MeasMF)
-    
-  })
-  
-
   #adjust coeffs using inputs
   observeEvent(input$adjust, {
     
