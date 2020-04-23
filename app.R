@@ -21,6 +21,8 @@ library(EmersonDataScience)
 library(DT)
 library(formattable)
 library(knitr)
+library(datapasta)
+library(jsonlite)
 
 #sourceDir("C:/Users/krrichar/Desktop/Coef/Functions")
 source("functions.R")
@@ -55,8 +57,10 @@ ui <- fluidPage(
                                               column(2,
                                                      numericInput("incEvap", "Increment by", value=5, width='150px'),
                                                      numericInput("incCond", "Increment by", value=10, width='150px')
-                                              )),
-                                            
+                                              ),
+                                              column(2,
+                                                     numericInput("displacement", "Displacement", value=NULL, width='150px'))
+                                            ),
                                             radioButtons("choice1", "Input Type",
                                                          c("Coefficients" = "coeffsChoice1",
                                                            "ELT Data" = "testValuesChoice1")),
@@ -65,30 +69,31 @@ ui <- fluidPage(
                                             conditionalPanel(condition = "input.choice1 == 'coeffsChoice1'",
                                                              fluidRow(column(2,
                                                                              actionButton("paste", "Paste"),
-                                                                             br(),
+                                                                             br(),br(),
                                                                              "Unprotect sheet, select cells, change type to 'number',",
-                                                                             "increase # decimals (important!) to desired number, press ctrl+c"   
+                                                                             "increase # decimals (important!) to desired number, press ctrl+c",
+                                                                             br(),br(),br(),
+                                                                             actionButton("reset", "Reset")
                                                              ),
                                                              column(3,
-                                                                    tableOutput("table1A")
+                                                                    dataTableOutput("table1A", width='100px')
                                                              ),
                                                              column(3,
                                                                     numericInput("numPtsAdded", "Add additional test points?", value=0, width='240px'),
                                                                     conditionalPanel(condition = "input.numPtsAdded > '0'",
                                                                       rHandsontableOutput("addPts"),
                                                                       br(),
-                                                                      actionButton("save", "Save"))
+                                                                      actionButton("save", "Recalculate"))
                                                              ),
                                                              column(2,
                                                                     textInput("condition", "Simulate Condition:", value="50/115", width='140px'),
-                                                                    numericInput("desired", "Desired EER:", value=15, width='140px'),
-                                                                    textOutput("shiftOutput")
+                                                                    numericInput("desired", "Desired EER:", value=18, width='140px'),
+                                                                    htmlOutput("shiftOutput")
                                                              ),
                                                              column(2,
-                                                                    numericInput("adjCap", "Adjust Capacity/MF", value=1, width='140px'),
-                                                                    numericInput("adjPow", "Adjust Power", value=1, width='140px'),
-                                                                    numericInput("adjCurr", "Adjust Current", value=1, width='140px'),
-                                                                    actionButton("adjust", "Adjust/Plot")
+                                                                    numericInput("adjCap", "Adjust Capacity/Mass Flow", value=1, width='140px'),
+                                                                    numericInput("adjPow", "Adjust Power/Current", value=1, width='140px'),
+                                                                    actionButton("adjust", "Adjust & Plot")
                                                              )),
                                                              fluidRow(
                                                                column(6,
@@ -122,7 +127,9 @@ ui <- fluidPage(
                                                                       fileInput("upload1B", "File Upload", multiple=F, accept=c(".csv"), width = '400px')
                                                                ),
                                                                column(8,
-                                                                      formattableOutput("cooksDist", width = "65%"))),
+                                                                      formattableOutput("cooksDist", width = "65%"),
+                                                                      textOutput("omitThese")
+                                                                      )),
                                                              
                                                              DT::dataTableOutput("uploadDeleteRows"),
                                                              
@@ -133,15 +140,14 @@ ui <- fluidPage(
                                                                ),
                                                                column(2,
                                                                       textInput("condition2", "Simulate Condition:", value="50/115", width='140px'),
-                                                                      numericInput("desired2", "Desired EER:", value=15, width='140px'),
+                                                                      numericInput("desired2", "Desired EER:", value=18, width='140px'),
                                                                       
-                                                                      textOutput("shiftOutput2")
+                                                                      htmlOutput("shiftOutput2")
                                                                ),
                                                                column(2,
-                                                                      numericInput("adjCap2","Adjust Capacity/MF",value=1,width='140px'),
-                                                                      numericInput("adjPow2","Adjust Power",value=1,width='140px'),
-                                                                      numericInput("adjCurr2","Adjust Current",value=1,width='140px'),
-                                                                      actionButton("adjust2","Adjust/Plot")
+                                                                      numericInput("adjCap2","Adjust Capacity/Mass Flow",value=1,width='140px'),
+                                                                      numericInput("adjPow2","Adjust Power/Current",value=1,width='140px'),
+                                                                      actionButton("adjust2","Adjust & Plot")
                                                                )),
                                                              fluidRow(
                                                                column(6,
@@ -195,6 +201,8 @@ ui <- fluidPage(
                                                                    "Two Stage"="twostage", 
                                                                    "Other"="other"))
                                               ),
+                                              column(2,
+                                                     numericInput("displacement2", "Displacement", value=NULL,width='150px')),
                                               conditionalPanel(condition = "input.envel == 'other'",
                                                                column(3,
                                                                       textInput("evapEnvTemps", "Evap (F) envelope points", value = "-20,-20,35,55,55"),
@@ -206,12 +214,12 @@ ui <- fluidPage(
                                             #first conditional panel
                                             conditionalPanel(condition = "input.choice2 == 'coeffs2'",
                                                              fluidRow(
-                                                               column(3,
+                                                               column(6,
                                                                       actionButton("paste2A.1", "Paste"),
-                                                                      tableOutput("table2A.1")),
-                                                               column(3,
+                                                                      dataTableOutput("table2A.1")),
+                                                               column(6,
                                                                       actionButton("paste2A.2", "Paste"),
-                                                                      tableOutput('table2A.2'))),
+                                                                      dataTableOutput('table2A.2'))),
                                                              fluidRow(
                                                                column(12,
                                                                       div(formattableOutput("compareTable2A"), style = "height:600px; overflow-y: scroll;overflow-x: scroll;", fixedHeader=T),
@@ -246,13 +254,13 @@ ui <- fluidPage(
                                                                       br(),br(),
                                                                       actionButton("paste2B", "Paste"),
                                                                       br(),br(),
-                                                                      tableOutput("table2B")
+                                                                      dataTableOutput("table2B")
                                                                ),
                                                                column(6,
                                                                       "Accepts .csv file type and must contain at least 12 unique test points.",
                                                                       br(),br(),
                                                                       fileInput("upload2B", "File Upload", multiple=F, accept=c(".csv"), width = '400px'),
-                                                                      tableOutput("createCoeffs2B")
+                                                                      dataTableOutput("createCoeffs2B")
                                                                )),
                                                              fluidRow(
                                                                div(formattableOutput("compareTable2B"), style = "height:600px; overflow-y: scroll;overflow-x: scroll;"),
@@ -265,7 +273,8 @@ ui <- fluidPage(
                                                                       br(),br(),br(),br(),br(),br(),
                                                                       plotOutput("MeasMFDifPlot2B"),
                                                                       br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("isenEffyPlot2B")
+                                                                      plotOutput("isenEffyPlot2B"),
+                                                                      br(),br(),br(),br(),br(),br()
                                                                ),
                                                                column(6,
                                                                       plotOutput("powDifPlot2B"),
@@ -298,29 +307,48 @@ server <- function(input, output, session) {
     #coefficients table output
     pasted1A <- readClipboard()
     pasted1A <- as.numeric(unlist((strsplit(pasted1A, split = "\t"))))
+    originalPasted <- pasted1A
+    #reset button
+    observeEvent(input$reset, {
+      RV$pasted1A <- originalPasted
+      
+      RV$pastedCoeffs1 <- data.frame(CAP = pasted1A[1:10],
+                                     POW = pasted1A[11:20],
+                                     CURR = pasted1A[21:30],
+                                     MF = pasted1A[31:40])
+      
+      output$table1A = renderDataTable({
+        datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
+                  callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                  options=list(dom='t', ordering=F))
+      })
+    })
+    
     RV$pastedCoeffs1 <- data.frame(CAP = pasted1A[1:10],
                                    POW = pasted1A[11:20],
                                    CURR = pasted1A[21:30],
                                    MF = pasted1A[31:40])
     
-    output$table1A = renderTable({
-      RV$pastedCoeffs1}, #end table output
-      options = list(ordering=F, dom='t', digits=15))
+    output$table1A = renderDataTable({
+      datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })
     
-    #Add additional test points
-  observe({
-    req(input$numPtsAdded)
-    if(input$numPtsAdded > 0){
-      Evap <- rep("",input$numPtsAdded)
-      Cond <- rep("",input$numPtsAdded)
-      Cap <- rep("",input$numPtsAdded)
-      Pow <- rep("",input$numPtsAdded)
-      Curr <- rep("",input$numPtsAdded)
-      MF <- rep("",input$numPtsAdded)
-      RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
-    }
-  })
-  
+    #Replace** additional test points
+    observe({
+      req(input$numPtsAdded)
+      if(input$numPtsAdded > 0){
+        Evap <- rep("",input$numPtsAdded)
+        Cond <- rep("",input$numPtsAdded)
+        Cap <- rep("",input$numPtsAdded)
+        Pow <- rep("",input$numPtsAdded)
+        Curr <- rep("",input$numPtsAdded)
+        MF <- rep("",input$numPtsAdded)
+        RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
+      }
+    })
+    
     data <- reactive({
       hot <- input$addPts
       if (!is.null(hot)) as.data.frame(hot_to_r(hot))
@@ -333,6 +361,7 @@ server <- function(input, output, session) {
     #recalculate coefficients based on additional test points
     observeEvent(input$save, { 
       hotDF <- data()
+      
       #create plot values
       evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
       condPlot <- seq(input$minCond,input$maxCond,input$incCond)
@@ -359,33 +388,53 @@ server <- function(input, output, session) {
                                 RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
                                 RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
                                 RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
-      #add in extra test points from inputs
-      el1 <- as.numeric(append(addingDF$evap, hotDF$Evap))
-      el2 <- as.numeric(append(addingDF$cond, hotDF$Cond))
-      el3 <- as.numeric(append(addingDF$Capacity, hotDF$Cap))
-      el4 <- as.numeric(append(addingDF$Power, hotDF$Pow))
-      el5 <- as.numeric(append(addingDF$Current, hotDF$Curr))
-      el6 <- as.numeric(append(addingDF$MF, hotDF$MF))
+      
+      ###below is using data from handsontable inputs
+      evaps <- as.numeric(hotDF[,1])
+      conds <- as.numeric(hotDF[,2])
+      #get indices of extisting conditions that need replaced
+      indices <- list()
+      for(i in 1:length(evaps)){
+        indices[[i]] <- which(addingDF[,1] == evaps[i] & addingDF[,2] == conds[i])
+      }
+      indices <- unlist(indices) #flatten list
+      print(indices)
+      print(addingDF)
+      addingDF %>% filter(!row_number() %in% indices)
+      # addingDF <- addingDF[-indices,]
+      print(addingDF)
+      
+      #add in extra test points at bottom of df
+      el1 <- as.numeric(append(frame$evap, hotDF$Evap))
+      el2 <- as.numeric(append(frame$cond, hotDF$Cond))
+      el3 <- as.numeric(append(frame$Capacity, hotDF$Cap))
+      el4 <- as.numeric(append(frame$Power, hotDF$Pow))
+      el5 <- as.numeric(append(frame$Current, hotDF$Curr))
+      el6 <- as.numeric(append(frame$MF, hotDF$MF))
       #make coefficients with lm
       RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(el1, el2, el3)
       RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(el1, el2, el4)
       RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(el1, el2, el5)
       RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(el1, el2, el6)
       
+      RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,10)
     })
     
     #calculate curve % shift
-    output$shiftOutput = renderText({
-      
+    output$shiftOutput = renderUI({
+      conditionString <- input$condition
       condition = input$condition %>%
         str_split_fixed(pattern = '/',n = 2) %>%
         as.numeric()
       evap = condition[1]
       cond = condition[2]
       
-      shift <- round(curveShift(evap, cond, RV$pastedCoeffs1$CAP,  RV$pastedCoeffs1$POW, input$desired),5)
+      shift <- round(curveShift(evap, cond, RV$pastedCoeffs1$CAP,  RV$pastedCoeffs1$POW, input$desired),4)
       
-      paste("Shift capacity", shift[1], "or shift power", shift[2])
+      str1 <- paste("Capacity at", conditionString, ":", shift[3])
+      str2 <- paste("Power at", conditionString, ":", shift[4])
+      str3 <- paste("Shift capacity", shift[1], "OR shift power", shift[2], "to achieve desired EER") 
+      HTML(paste(str1,str2,'<br/>','<br/>',str3))
     })
   })#end observe event
   
@@ -400,7 +449,7 @@ server <- function(input, output, session) {
     
     RV$pastedCoeffs1$CAP <- RV$pastedCoeffs1$CAP*input$adjCap
     RV$pastedCoeffs1$POW <- RV$pastedCoeffs1$POW*input$adjPow
-    RV$pastedCoeffs1$CURR <- RV$pastedCoeffs1$CURR*input$adjCurr
+    RV$pastedCoeffs1$CURR <- RV$pastedCoeffs1$CURR*input$adjPow
     RV$pastedCoeffs1$MF <- RV$pastedCoeffs1$MF*input$adjCap
     
     
@@ -589,7 +638,7 @@ server <- function(input, output, session) {
     volEffy1A$Density <- volEffy1A$Density * 1728 #conversion to lbm/ft3
     volEffy1A$specVol <- 1/volEffy1A$Density
     volEffy1A$mf <- measMFPlotVals1A$MeasMassFlow
-    volEffy1A$volEffy <- measMFPlotVals1A$MeasMassFlow / (volEffy1A$Density * 1.539 * 3500 * 0.034722)
+    volEffy1A$volEffy <- measMFPlotVals1A$MeasMassFlow / (volEffy1A$Density * input$displacement * 3500 * 0.034722)
     
     output$volEffyCurve1A = renderPlot({
       ggplot(volEffy1A, aes(x=evap, y=volEffy, color=factor(cond))) +
@@ -634,10 +683,6 @@ server <- function(input, output, session) {
     MeasMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
     CalcMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MassFlow)
     
-    # Evap <- RVChoice1B$uploadDF1B$EvapTemp
-    # Cond <- RVChoice1B$uploadDF1B$CondTemp
-    # cooksDistance <- as.data.frame(cbind(Evap,Cond,CAP, POW, CURR, MeasMF))
-    
     # #output cook's distance table
     # output$cooksDist = renderFormattable({
     #   formattable(cooksDistance, list(
@@ -648,8 +693,9 @@ server <- function(input, output, session) {
     #   ), caption = "Cook's Distance") 
     # }) #end output
     
-    #creates text input box for rows the users wants to remove based on results of cook's dist.
+    #creates button inside table for removing rows based on results of cook's dist.
     Delete = shinyInput(actionButton, numRows, 'button_', label = "Remove", onclick = 'Shiny.onInputChange(\"select_button\", this.id)')
+    
     RVChoice1B$uploadDF1B = cbind.data.frame(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, Delete, RVChoice1B$uploadDF1B$Capacity, CAP,
                                              RVChoice1B$uploadDF1B$Power, POW, RVChoice1B$uploadDF1B$Current, CURR, RVChoice1B$uploadDF1B$MeasMassFlow,
                                              MeasMF, RVChoice1B$uploadDF1B$MassFlow, CalcMF, stringsAsFactors = F)
@@ -659,11 +705,31 @@ server <- function(input, output, session) {
     RVChoice1B$uploadDF1B[,c(1,2)] <- round(RVChoice1B$uploadDF1B[,c(1,2)],1)
     colnames(RVChoice1B$uploadDF1B) <- c("Evap", "Cond", "Remove", "CAP", "CD_CAP", "POW", "CD_POW", "CURR", "CD_CURR", "MeasMF", "CD_MMF", "CalcMF", "CD_CMF")
     
+    iso <- isolate(RVChoice1B$uploadDF1B)
+    #which rows to remove
+    cutoffValue <- round(4/(length(iso[,1])),4)
+    delete <- which(iso[,5] > cutoffValue)
+    delete1 <- which(iso[,7] > cutoffValue)
+    delete2 <- which(iso[,9] > cutoffValue)
+    delete3 <- which(iso[,11] > cutoffValue)
+    delete4 <- which(iso[,13] > cutoffValue)
+    
+    listoflists <- c(delete, delete1, delete2, delete3, delete4)
+    listoflists <- listoflists[!is.na(listoflists)] #get rid of empty lists
+    flatList <- toString(unique(unlist(listoflists))) #flatten list, remove duplciates, and change to string for printing
+    
+    output$omitThese = renderText({
+      str1 <- paste("Cook's distance is used to quantitatively estimate the influence (and likelihood that it's an outlier) of a data point in a regression model.")
+      str1.5 <- paste("The higher the Cook's distance value is, the more influence that test point likely has.")
+      str2 <- paste("The standard cutoff for outlier removal is", cutoffValue, "(4/n). Rows", flatList, "are recommended for removal.")
+      HTML(paste(str1, str1.5, str2))
+      })
+    
     ####action button within DT is preventing me from coloring cell backgrounds with formatStyle()
     output$uploadDeleteRows = DT::renderDataTable(
       RVChoice1B$uploadDF1B,
       options = list(ordering=F),
-      rownames = FALSE, server = FALSE, escape = FALSE, selection = 'none'
+      server = FALSE, escape = FALSE, selection = 'none'
     )
     
     observeEvent(input$select_button, {
@@ -688,7 +754,7 @@ server <- function(input, output, session) {
     
     #calculate curve % shift
     output$shiftOutput2 = renderText({
-      
+      conditionString <- input$condition
       condition = input$condition2 %>%
         str_split_fixed(pattern = '/',n = 2) %>%
         as.numeric()
@@ -697,7 +763,10 @@ server <- function(input, output, session) {
       
       shift <- round(curveShift(evap, cond, RVChoice1B$newCoef1B$Capacity,  RVChoice1B$newCoef1B$Power, input$desired2),5)
       
-      paste("Shift capacity", shift[1], "or shift power", shift[2])
+      str1 <- paste("Capacity at", conditionString, ":", shift[3])
+      str2 <- paste("Power at", conditionString, ":", shift[4])
+      str3 <- paste("Shift capacity", shift[1], "OR shift power", shift[2], "to achieve desired EER") 
+      HTML(paste(str1,str2,'<br/>','<br/>',str3))
     })
     
   })
@@ -708,7 +777,7 @@ server <- function(input, output, session) {
     coefAdjust <- coefAdjust %>%
       mutate(Capacity = Capacity*input$adjCap2,
              Power = Power*input$adjPow2,
-             Current = Current*input$adjCurr2,
+             Current = Current*input$adjPow2,
              CalcMF = CalcMF*input$adjCap2,
              MeasMF = MeasMF*input$adjCap2)
     RVChoice1B$newCoef1B <- coefAdjust
@@ -902,7 +971,7 @@ server <- function(input, output, session) {
     volEffy1B$Density <- volEffy1B$Density * 1728 #conversion to lbm/ft3
     volEffy1B$specVol <- 1/volEffy1B$Density
     volEffy1B$mf <- measMFPlotVals1B$MeasMF
-    volEffy1B$volEffy <- measMFPlotVals1B$MeasMF / (volEffy1B$Density * 1.539 * 3500 * 0.034722)
+    volEffy1B$volEffy <- measMFPlotVals1B$MeasMF / (volEffy1B$Density * input$displacement * 3500 * 0.034722)
     
     output$volEffyCurve1B = renderPlot({
       ggplot(volEffy1B, aes(x=evap, y=volEffy, color=factor(cond))) +
@@ -916,7 +985,6 @@ server <- function(input, output, session) {
     }, height = 500, width = 700) #end output
     
   }) #end observe event, calculate button
-  
   
   
   
@@ -939,10 +1007,13 @@ server <- function(input, output, session) {
                                    MF = pasted2A.1[31:40])
     
     RV2$pastedCoeffs2A.1 <- pastedCoeffs2A.1
-    output$table2A.1 = renderTable({
-      RV2$pastedCoeffs2A.1}, #end table output
-      options = list(ordering=F, dom='t', digits=15))
-  })#end observe event
+    
+    output$table2A.1 = renderDataTable({
+      datatable(RV2$pastedCoeffs2A.1, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end observe event
+  })
   
   #second set of coeffs
   observeEvent(input$paste2A.2, {
@@ -955,10 +1026,13 @@ server <- function(input, output, session) {
                                    MF = pasted2A.2[31:40])
     
     RV2$pastedCoeffs2A.2 <- pastedCoeffs2A.2
-    output$table2A.2 = renderTable({
-      RV2$pastedCoeffs2A.2}, #end table output
-      options = list(ordering=F, dom='t', digits=15))
-  })#end observe event
+    
+    output$table2A.2 = renderDataTable({
+      datatable(RV2$pastedCoeffs2A.2, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end observe event
+  })
   
   observeEvent(input$paste2A.2, {
     #create envelope
@@ -1033,7 +1107,7 @@ server <- function(input, output, session) {
     volTemp1$Density <- mapply(refprope, 'D', 'T', volTemp1$Evap+input$sh2, 'P', volTemp1$PSuc,input$refrigerant2)  
     volTemp1$Density <- volTemp1$Density * 1728 #conversion to lbm/ft3
     volTemp1$mf <- comparisonDF2A$MeasMF1
-    volTemp1$volEffy <- volTemp1$mf / (volTemp1$Density * 1.539 * 3500 * 0.034722)
+    volTemp1$volEffy <- volTemp1$mf / (volTemp1$Density * input$displacement2 * 3500 * 0.034722)
     comparisonDF2A$VolEffy1 <- volTemp1$volEffy
     
     ##### second set of coefficients
@@ -1081,7 +1155,7 @@ server <- function(input, output, session) {
     volTemp2$Density <- mapply(refprope, 'D', 'T', volTemp2$Evap+input$sh2, 'P', volTemp2$PSuc,input$refrigerant2)  
     volTemp2$Density <- volTemp2$Density * 1728 #conversion to lbm/ft3
     volTemp2$mf <- comparisonDF2A$MeasMF2
-    volTemp2$volEffy <- volTemp2$mf / (volTemp2$Density * 1.539 * 3500 * 0.034722)
+    volTemp2$volEffy <- volTemp2$mf / (volTemp2$Density * input$displacement2 * 3500 * 0.034722)
     comparisonDF2A$VolEffy2 <- volTemp2$volEffy
     #calcualate %difference columns
     comparisonDF2A$Error_CAP <- (comparisonDF2A$CAP1 - comparisonDF2A$CAP2) / comparisonDF2A$CAP1 * 100
@@ -1379,10 +1453,13 @@ server <- function(input, output, session) {
                                  MeasMF = pasted2B[31:40])
     
     RV3$pastedCoeffs2B <- pastedCoeffs2B
-    output$table2B = renderTable({
-      RV3$pastedCoeffs2B}, #end table output
-      options = list(ordering=F, dom='t', digits=15))
-  })#end observe event
+    
+    output$table2B = renderDataTable({
+      datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
+  })
   
   observeEvent(input$upload2B, {
     req(input$upload2B)
@@ -1399,9 +1476,11 @@ server <- function(input, output, session) {
     newCoef2B$CURR <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Current)
     newCoef2B$MeasMF <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$MeasMassFlow)
     
-    output$createCoeffs2B <- renderTable({
-      newCoef2B}, digits = 4
-    )#end output
+    output$createCoeffs2B = renderDataTable({
+      datatable(newCoef2B, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
     
     #create envelope
     if(input$envel == 'other') {
@@ -1432,22 +1511,22 @@ server <- function(input, output, session) {
     
     #####first set of coefficients
     comparisonDF2B$CAP1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CAP[1],
-                                           RV3$pastedCoeffs2B$CAP[2],RV3$pastedCoeffs2B$CAP[3],RV3$pastedCoeffs2B$CAP[4],
-                                           RV3$pastedCoeffs2B$CAP[5],RV3$pastedCoeffs2B$CAP[6],RV3$pastedCoeffs2B$CAP[7],
-                                           RV3$pastedCoeffs2B$CAP[8],RV3$pastedCoeffs2B$CAP[9],RV3$pastedCoeffs2B$CAP[10])
+                                  RV3$pastedCoeffs2B$CAP[2],RV3$pastedCoeffs2B$CAP[3],RV3$pastedCoeffs2B$CAP[4],
+                                  RV3$pastedCoeffs2B$CAP[5],RV3$pastedCoeffs2B$CAP[6],RV3$pastedCoeffs2B$CAP[7],
+                                  RV3$pastedCoeffs2B$CAP[8],RV3$pastedCoeffs2B$CAP[9],RV3$pastedCoeffs2B$CAP[10])
     comparisonDF2B$POW1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$POW[1],
-                                        RV3$pastedCoeffs2B$POW[2],RV3$pastedCoeffs2B$POW[3],RV3$pastedCoeffs2B$POW[4],
-                                        RV3$pastedCoeffs2B$POW[5],RV3$pastedCoeffs2B$POW[6],RV3$pastedCoeffs2B$POW[7],
-                                        RV3$pastedCoeffs2B$POW[8],RV3$pastedCoeffs2B$POW[9],RV3$pastedCoeffs2B$POW[10])
+                                  RV3$pastedCoeffs2B$POW[2],RV3$pastedCoeffs2B$POW[3],RV3$pastedCoeffs2B$POW[4],
+                                  RV3$pastedCoeffs2B$POW[5],RV3$pastedCoeffs2B$POW[6],RV3$pastedCoeffs2B$POW[7],
+                                  RV3$pastedCoeffs2B$POW[8],RV3$pastedCoeffs2B$POW[9],RV3$pastedCoeffs2B$POW[10])
     comparisonDF2B$EER1 <- comparisonDF2B$CAP1 / comparisonDF2B$POW1
     comparisonDF2B$CURR1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CURR[1],
-                                          RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
-                                          RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
-                                          RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
+                                   RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
+                                   RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
+                                   RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
     comparisonDF2B$MeasMF1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MeasMF[1],
-                                               RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
-                                               RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
-                                               RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
+                                     RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
+                                     RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
+                                     RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
     #calcs calc mf
     calcMF3 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     calcMF3$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1475,9 +1554,9 @@ server <- function(input, output, session) {
     volTemp3$Density <- mapply(refprope, 'D', 'T', volTemp3$Evap+input$sh2, 'P', volTemp3$PSuc,input$refrigerant2)  
     volTemp3$Density <- volTemp3$Density * 1728 #conversion to lbm/ft3
     volTemp3$mf <- comparisonDF2B$MeasMF1
-    volTemp3$volEffy <- volTemp3$mf / (volTemp3$Density * 1.539 * 3500 * 0.034722)
+    volTemp3$volEffy <- volTemp3$mf / (volTemp3$Density * input$displacement2 * 3500 * 0.034722)
     comparisonDF2B$VolEffy1 <- volTemp3$volEffy
-  
+    
     ##### second set, created from uploaded test data
     comparisonDF2B$CAP2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CAP[1],
                                   newCoef2B$CAP[2],newCoef2B$CAP[3],newCoef2B$CAP[4],
@@ -1496,7 +1575,7 @@ server <- function(input, output, session) {
                                      newCoef2B$MeasMF[2],newCoef2B$MeasMF[3],newCoef2B$MeasMF[4],
                                      newCoef2B$MeasMF[5],newCoef2B$MeasMF[6],newCoef2B$MeasMF[7],
                                      newCoef2B$MeasMF[8],newCoef2B$MeasMF[9],newCoef2B$MeasMF[10])
-  
+    
     #calcs calc mf
     calcMF4 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     calcMF4$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1524,7 +1603,7 @@ server <- function(input, output, session) {
     volTemp4$Density <- mapply(refprope, 'D', 'T', volTemp4$Evap+input$sh2, 'P', volTemp4$PSuc,input$refrigerant2)  
     volTemp4$Density <- volTemp4$Density * 1728 #conversion to lbm/ft3
     volTemp4$mf <- comparisonDF2B$MeasMF2
-    volTemp4$volEffy <- volTemp4$mf / (volTemp4$Density * 1.539 * 3500 * 0.034722)
+    volTemp4$volEffy <- volTemp4$mf / (volTemp4$Density * input$displacement2 * 3500 * 0.034722)
     comparisonDF2B$VolEffy2 <- volTemp4$volEffy
     #calcualate %difference columns
     comparisonDF2B$Error_CAP <- (comparisonDF2B$CAP1 - comparisonDF2B$CAP2) / comparisonDF2B$CAP1 * 100
@@ -1807,6 +1886,7 @@ server <- function(input, output, session) {
   
 }#end server
 ####################################################
+
 # Run the application 
 shinyApp(ui = ui, server = server)
 
