@@ -109,303 +109,340 @@ ui <- fluidPage(
                                               
                                               style='padding-left:30px;'
                                        ))),
-                                     
-                                     mainPanel(
-                      ))
-             ),
+                        
+                        mainPanel(
+                        ))),
+             
              tabPanel("Create",
                       #Text
                       fluidRow(column(12,
                                       h4("Make Coefficients and Curves"),
-                                      "Use this tab to manipulate existing coefficients, create new from rating ELT data, and render performance curves.",br(),
+                                      "Use this tab to manipulate existing coefficients, create new from rating ELT data, and render performance curves.",br(),br(),
                                       "")),
                       #Sidebar panel with inputs
-                      fluidRow(sidebarPanel(width = 12,
-                                            fluidRow(
-                                              column(1,
-                                                     h4("Inputs"),br(),
-                                                     radioButtons("choice1", "Import Type",
+                      sidebarPanel(width=3,
+                                   style="max-height: 585px;",
+                                   fluidRow(
+                                     column(6,
+                                            h4("Inputs"),br(),
+                                            radioButtons("choice1", "Import Type",
                                                          c("Coefficients" = "coeffsChoice1",
                                                            "ELT Data" = "testValuesChoice1")),
-                                                     
-                                                     "Include .fld or .mix in refrigerant name",br(),
-                                                     textInput("refrigerant", "Refrigerant", value="R410A.mix", width='115px'),
-                                                     numericInput("sh", "Superheat", value=20, width='115px'),
-                                                     numericInput("sc", "Subcooling", value=15, width='115px'),
-                                                     numericInput("displacement", "Displacement", value=NULL, width='115px'),
-                                                     style='padding-left:20px;'
-                                              ),
-                                              column(1,br(),br(),br(),
-                                                     "Mins, maxes, and increments define ranges of plot values.",br(),
-                                                     numericInput("minEvap", "Min Evap", value=-10, width='115px'),
-                                                     numericInput("maxEvap", "Max Evap", value=60, width='115px'),
-                                                     numericInput("incEvap", "Evap Incr", value=5, width='115px'),
-                                                     numericInput("minCond", "Min Cond", value=80, width='115px'),
-                                                     numericInput("maxCond", "Max Cond", value=150, width='115px'),
-                                                     numericInput("incCond", "Cond Incr", value=10, width='115px'),
-                                                     style='padding-left:15px;padding-right:10px;'
-                                              ),
-                                              
-                                              #conditional 1
-                                              conditionalPanel(condition = "input.choice1 == 'coeffsChoice1'",
-                                                               fluidRow(
-                                                                 column(5,
-                                                                        h4("Load Coefficients"),br(),
-                                                                        tags$head(
-                                                                          tags$style(HTML('#paste{background-color:#98FB98}'))
-                                                                        ),
-                                                                        actionButton("paste", "Paste"),br(),
-                                                                        strong("To copy:"),
-                                                                        "Unprotect sheet, select cells, change type to 'number',", br(),
-                                                                        "increase # decimals (important!) to desired number, press ctrl+c",br(),br(),
-                                                                        dataTableOutput("table1A", width='100px'),br(),
-                                                                        style='padding-left:50px;'
-                                                                        
-                                                                        
-                                                                 ),
-                                                                 column(4,
-                                                                        h4("Manipulate Coefficients"),br(),
-                                                                        
-                                                                        tags$head(
-                                                                          tags$style(HTML('#reset{background-color:#e6b3cc}'))
-                                                                        ),
-                                                                        actionButton("reset", "Reset"),br(),
-                                                                        "Revert working set of coefs back to the original pasted values by pressing this button at any time.",br(),br(),
-                                                                        
-                                                                        numericInput("numPtsAdded", "Add Test Points", value=0, width='115px'),
-                                                                        conditionalPanel(condition = "input.numPtsAdded > '0'",
-                                                                                         rHandsontableOutput("addPts"),br(),
-                                                                                         tags$head(
-                                                                                           tags$style(HTML('#save{background-color:#FFD700}'))
-                                                                                         ),
-                                                                                         actionButton("save", "Recalculate")),br(),
-                                                                        
-                                                                        h4("EER Goal Seek"),
-                                                                        fluidRow(
-                                                                          column(3,
-                                                                                 textInput("condition", "Condition", value="50/115", width='115px')),
-                                                                          column(3,
-                                                                                 numericInput("desired", "Desired EER", value=18, width='115px')),
-                                                                          column(3, 
-                                                                                 numericInput("adjCap", "Adjust Cap/MF", value=1, width='110px')),
-                                                                          column(3,
-                                                                                  numericInput("adjPow", "Adjust Pow/Cur", value=1, width='110px'),
-                                                                                 style='padding-right:0px;')
-                                                                        ),
-                                                                        fluidRow(
-                                                                          column(9,
-                                                                                 htmlOutput("shiftOutput")),
-                                                                          column(3,
-                                                                                 tags$head(
-                                                                                   tags$style(HTML('#adjust{background-color:#AFEEEE}'))
-                                                                                 ),
-                                                                                 actionButton("adjust", "Adjust & Plot"))
-                                                                        )
-                                                                 )
-                                                               ),
-                                                               fluidRow(
-                                                                 column(6,
-                                                                        plotOutput("capCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("currCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("measMFCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("percDiffCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("volEffyCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br()
-                                                                 ),
-                                                                 column(6,
-                                                                        plotOutput("powCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("EERCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("calcMFCurve1A"),
-                                                                        br(),br(),br(),br(),br(),br(),
-                                                                        plotOutput("isenEffyCurve1A")
-                                                                 ))
-                                              )),
                                             
-                                            #conditional 2
-                                            conditionalPanel(condition = "input.choice1 == 'testValuesChoice1'",
-                                                             
-                                                               column(3,
-                                                                      h4("Load Data"),
-                                                                      "Accepts .csv file type and must contain at least 12 unique test points.",
-                                                                      fileInput("upload1B", "File Upload", multiple=F, accept=c(".csv"), width = '300px')
-                                                                      
-                                                               ),
-                                                               column(6,
-                                                                      DT::dataTableOutput("uploadDeleteRows"),
-                                                                      textOutput("omitThese")
-                                                               ),
-                                                             
-                                                            
-                                                             actionButton("calculate", "Calculate/Reset"),
-                                                             fluidRow(
-                                                               column(7,
-                                                                      tableOutput("createCoeffs1B")
-                                                               ),
-                                                               column(2,
-                                                                      textInput("condition2", "Simulate Condition:", value="50/115", width='140px'),
-                                                                      numericInput("desired2", "Desired EER:", value=18, width='140px'),
-                                                                      
-                                                                      htmlOutput("shiftOutput2")
-                                                               ),
-                                                               column(2,
-                                                                      numericInput("adjCap2","Adjust Capacity/Mass Flow",value=1,width='140px'),
-                                                                      numericInput("adjPow2","Adjust Power/Current",value=1,width='140px'),
-                                                                      actionButton("adjust2","Adjust & Plot")
-                                                               )),
-                                                             fluidRow(
-                                                               column(6,
-                                                                      plotOutput("capCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("currCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("measMFCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("percDiffCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("volEffyCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br()
-                                                               ),
-                                                               column(6,
-                                                                      plotOutput("powCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("EERCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("calcMFCurve1B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("isenEffyCurve1B")
-                                                               )
-                                                             ))
-                      )), #end sidebar
+                                            "Include .fld or .mix in refrigerant name",br(),
+                                            textInput("refrigerant", "Refrigerant", value="R410A.mix", width='115px'),
+                                            numericInput("sh", "Superheat", value=20, width='115px'),
+                                            numericInput("sc", "Subcooling", value=15, width='115px'),
+                                            numericInput("displacement", "Displacement", value=NULL, width='115px'),
+                                            style='padding-left:20px;'
+                                     ),
+                                     column(6,br(),br(),br(),
+                                            "Mins, maxes, and increments define ranges of plot values.",br(),
+                                            numericInput("minEvap", "Min Evap", value=-10, width='115px'),
+                                            numericInput("maxEvap", "Max Evap", value=60, width='115px'),
+                                            numericInput("incEvap", "Evap Incr", value=5, width='115px'),
+                                            numericInput("minCond", "Min Cond", value=80, width='115px'),
+                                            numericInput("maxCond", "Max Cond", value=150, width='115px'),
+                                            numericInput("incCond", "Cond Incr", value=10, width='115px'),
+                                            style='padding-left:15px;padding-right:10px;'
+                                     ))),
                       
                       mainPanel(
+                        #conditional 1
+                        conditionalPanel(condition = "input.choice1 == 'coeffsChoice1'",
+                                         fluidRow(
+                                           column(7,
+                                                  h4("Load Coefficients"),br(),
+                                                  tags$head(
+                                                    tags$style(HTML('#paste{background-color:#98FB98}'))
+                                                  ),
+                                                  actionButton("paste", "Paste"),br(),
+                                                  strong("To copy:"),
+                                                  "Unprotect sheet, select cells, change type to 'number',", br(),
+                                                  "increase # decimals (important!) to desired number, press ctrl+c",br(),br(),
+                                                  dataTableOutput("table1A", width='100px'),br(),
+                                                  style='padding-left:50px;'
+                                           ),
+                                           column(5,
+                                                  h4("Manipulate Coefficients"),br(),
+                                                  tags$head(
+                                                    tags$style(HTML('#reset{background-color:#e6b3cc}'))
+                                                  ),
+                                                  actionButton("reset", "Reset"),br(),
+                                                  "Revert working set of coefs back to the original pasted values by pressing this button at any time.",br(),br(),
+                                                  
+                                                  numericInput("numPtsAdded", "Add Test Points", value=0, width='115px'),
+                                                  conditionalPanel(condition = "input.numPtsAdded > '0'",
+                                                                   rHandsontableOutput("addPts"),br(),
+                                                                   tags$head(
+                                                                     tags$style(HTML('#save{background-color:#FFD700}'))
+                                                                   ),
+                                                                   actionButton("save", "Recalculate")),br(),
+                                                  h4("EER Goal Seek"),
+                                                  fluidRow(
+                                                    column(3,
+                                                           textInput("condition", "Condition", value="50/115", width='120px'),
+                                                           style='padding:2px;'),
+                                                    column(3,
+                                                           numericInput("desired", "Desired EER", value=18, width='120px'),
+                                                           style='padding:2px;'),
+                                                    column(3, 
+                                                           numericInput("adjCap", "Adjust Cap/MF", value=1, width='140px'),
+                                                           style='padding:2px;'),
+                                                    column(3,
+                                                           numericInput("adjPow", "Adjust Pow/Cur", value=1, width='150px'),
+                                                           style='padding:2px;')),
+                                                  fluidRow(
+                                                    column(9,
+                                                           htmlOutput("shiftOutput"), style='padding-left:3px;'),
+                                                    column(3,
+                                                           tags$head(
+                                                             tags$style(HTML('#adjust{background-color:#AFEEEE}'))
+                                                           ),
+                                                           actionButton("adjust", "Adjust & Plot"))
+                                                  )
+                                           )
+                                         ),br(),br(),
+                                         fluidRow(
+                                           column(6,
+                                                  plotOutput("capCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("currCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("measMFCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("percDiffCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("volEffyCurve1A"),
+                                                  style='padding-left:0px;'
+                                                  
+                                           ),
+                                           column(6,
+                                                  plotOutput("powCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("EERCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("calcMFCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("isenEffyCurve1A"),
+                                                  br(),br(),br(),br(),br(),
+                                                  style='padding-right:0px;'
+                                           ))),
                         
-                      )
-             ),
+                        conditionalPanel(condition = "input.choice1 == 'testValuesChoice1'",
+                                         
+                                         fluidRow(
+                                           column(8,
+                                                  h4("Load Data"),
+                                                  fluidRow(
+                                                    column(6,
+                                                           fileInput("upload1B", "File Upload", multiple=F, accept=c(".csv"), width = '600px')),
+                                                    column(6,br(),
+                                                           "Accepts .csv file type and must contain at least 12 unique test points."
+                                                    ))
+                                           )),
+                                         fluidRow(
+                                           column(12,
+                                                  textOutput("omitThese"),br(),
+                                                  DT::dataTableOutput("uploadDeleteRows")
+                                           )),
+                                         br(),
+                                         tags$head(
+                                           tags$style(HTML('#calculate{background-color:#98FB98}'))
+                                         ),
+                                         fluidRow(actionButton("calculate", "Calculate/Reset"), br()),
+                                         fluidRow(
+                                           column(7,
+                                                  tableOutput("createCoeffs1B")
+                                           ),
+                                           column(3,
+                                                  h4("EER Goal Seek"),
+                                                  textInput("condition2", "Condition", value="50/115", width='140px'),
+                                                  numericInput("desired2", "Desired EER", value=18, width='140px'),
+                                                  htmlOutput("shiftOutput2"),
+                                                  style='padding:26px;'
+                                           ),
+                                           column(2,
+                                                  br(),br(),br(),
+                                                  numericInput("adjCap2","Adjust Cap/MF",value=1,width='140px'),
+                                                  numericInput("adjPow2","Adjust Pow/Curr",value=1,width='140px'),
+                                                  tags$head(
+                                                    tags$style(HTML('#adjust2{background-color:#AFEEEE}'))
+                                                  ),
+                                                  actionButton("adjust2","Adjust & Plot")
+                                           )),
+                                         fluidRow(
+                                           column(6,
+                                                  plotOutput("capCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("currCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("measMFCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("percDiffCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("volEffyCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  style='padding-left:0px;'
+                                           ),
+                                           column(6,
+                                                  plotOutput("powCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("EERCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("calcMFCurve1B"),
+                                                  br(),br(),br(),br(),br(),
+                                                  plotOutput("isenEffyCurve1B"),
+                                                  style='padding-right:0px;'
+                                           )
+                                         )
+                        ))),
              #########################################################
              #second tab
              tabPanel("Compare",
-                      fluidRow(column(12,
-                                      h4("Compare Compressors"))),
-                      #Sidebar panel with inputs
-                      fluidRow(sidebarPanel(width = 12,
-                                            fluidRow(
-                                              column(2,
-                                                     textInput("refrigerant2", "Refrigerant", value="R410A.mix", width='200px')
-                                              ),
-                                              column(1, 
-                                                     numericInput("sh2", "Superheat", value=20, width='150px')
-                                              ),
-                                              column(1,
-                                                     numericInput("sc2", "Subcooling", value=15, width='150px')
-                                              ),
-                                              column(2,
-                                                     selectInput("envel", "Envelope:", 
-                                                                 c("Fixed Speed"="fixedspeed", 
-                                                                   "Two Stage"="twostage", 
-                                                                   "Other"="other"))
-                                              ),
-                                              column(2,
-                                                     numericInput("displacement2", "Displacement", value=NULL,width='150px')),
-                                              conditionalPanel(condition = "input.envel == 'other'",
-                                                               column(3,
-                                                                      textInput("evapEnvTemps", "Evap (F) envelope points", value = "-20,-20,35,55,55"),
-                                                                      textInput("condEnvTemps", "Cond (F) envelope points", value = "80,95,145,145,80"))
-                                              )),
-                                            radioButtons("choice2", "Input Type",
-                                                         c("Coefficients" = "coeffs2",
-                                                           "Coefficients & ELT Data" = "both2")),
-                                            #first conditional panel
-                                            conditionalPanel(condition = "input.choice2 == 'coeffs2'",
-                                                             fluidRow(
-                                                               column(6,
-                                                                      
-                                                                      actionButton("paste2A.1", "Paste"),
-                                                                      dataTableOutput("table2A.1")),
-                                                               column(6,
-                                                                      
-                                                                      actionButton("paste2A.2", "Paste"),
-                                                                      dataTableOutput('table2A.2'))),
-                                                             fluidRow(
-                                                               column(12,
-                                                                      div(formattableOutput("compareTable2A"), style = "height:600px; overflow-y: scroll;overflow-x: scroll;", fixedHeader=T),
-                                                                      br())),
-                                                             fluidRow(
-                                                               column(6,
-                                                                      plotOutput("capDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("currDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("MeasMFDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("isenEffyPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br()
-                                                               ),
-                                                               column(6,
-                                                                      plotOutput("powDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("EERDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("CalcMFDifPlot2A"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("volEffyPlot2A")
-                                                               ))
-                                            ), #end conditional panel
-                                            #second conditional panel
-                                            conditionalPanel(condition = "input.choice2 == 'both2'",
-                                                             fluidRow(
-                                                               column(3,
-                                                                      "Unprotect sheet, select cells, change type to 'number', increase #", 
-                                                                      "decimals (important!) to desired number, press ctrl+c",
-                                                                      br(),br(),
-                                                                      tags$head(
-                                                                        tags$style(HTML('#paste2B{background-color:#32CD32}'))
-                                                                      ),
-                                                                      actionButton("paste2B", "Paste"),
-                                                                      br(),br(),
-                                                                      dataTableOutput("table2B")
-                                                               ),
-                                                               column(6,
-                                                                      "Accepts .csv file type and must contain at least 12 unique test points.",
-                                                                      br(),br(),
-                                                                      fileInput("upload2B", "File Upload", multiple=F, accept=c(".csv"), width = '400px'),
-                                                                      dataTableOutput("createCoeffs2B")
-                                                               )),
-                                                             fluidRow(
-                                                               div(formattableOutput("compareTable2B"), style = "height:600px; overflow-y: scroll;overflow-x: scroll;"),
-                                                               br()),
-                                                             fluidRow(
-                                                               column(6,
-                                                                      plotOutput("capDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("currDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("MeasMFDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("isenEffyPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br()
-                                                               ),
-                                                               column(6,
-                                                                      plotOutput("powDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("EERDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("CalcMFDifPlot2B"),
-                                                                      br(),br(),br(),br(),br(),br(),
-                                                                      plotOutput("volEffyPlot2B")
-                                                               ))) #end conditional panel
-                      )), #end sidebar panel
                       
-                      mainPanel( #outputs 
-                      )
-             )
-  )
-)
+                      h4("Compare Compressors"),
+                      wellPanel(width = 12,
+                                fluidRow(
+                                  column(2,
+                                         radioButtons("choice2", "Input Type",
+                                                      c("Coefficients" = "coeffs2",
+                                                        "Coefficients & ELT Data" = "both2")),
+                                         style='padding-right:0px'),
+                                  column(1,
+                                         textInput("refrigerant2", "Refrigerant", value="R410A.mix", width='175px'),
+                                         style='padding-left:0px'
+                                  ),
+                                  column(1, 
+                                         numericInput("sh2", "Superheat", value=20, width='150px'),
+                                         style='padding-left:0px'
+                                  ),
+                                  column(1,
+                                         numericInput("sc2", "Subcooling", value=15, width='150px'),
+                                         style='padding-left:0px'
+                                  ),
+                                  column(1,
+                                         numericInput("displacement2", "Displacement", value=NULL,width='150px'),
+                                         style='padding-left:0px'
+                                  ),
+                                  column(6,
+                                         selectInput("envel", "Envelope:", 
+                                                     c("Fixed Speed"="fixedspeed", 
+                                                       "Two Stage"="twostage", 
+                                                       "Other"="other"), width='140px'),
+                                         
+                                         conditionalPanel(condition = "input.envel == 'other'",
+                                                          column(6,
+                                                                 textInput("evapEnvTemps", "Evap (F) Envelope Coords", value = "-20,-20,35,55,55")),
+                                                          # style='padding-left:0px'),
+                                                          column(6,
+                                                                 textInput("condEnvTemps", "Cond (F) Envelope Coords", value = "80,95,145,145,80"))
+                                                          # style='padding-left:0px')
+                                         )
+                                  )
+                                )
+                      ),#end well panel
+                      
+                      mainPanel(
+                        h4("Load Coefficients"),
+                        strong("To copy:"),
+                        "Unprotect sheet, select cells, change type to 'number', increase # decimals (important!) to desired number, press ctrl+c",
+                        br(), br(),
+                        #first conditional panel
+                        conditionalPanel(condition = "input.choice2 == 'coeffs2'",
+                                         fluidRow(
+                                           column(6,
+                                                  "Paste your first set of coefficients here.",br(),br(),
+                                                  actionButton("paste2A.1", "Paste", style="background-color: #98FB97"),
+                                                  dataTableOutput("table2A.1"),
+                                                  style = "float:left;"),
+                                           column(6,
+                                                  "Paste your second set of coefficients here.",br(),br(),
+                                                  actionButton("paste2A.2", "Paste",style="background-color: #98FB97"),
+                                                  dataTableOutput('table2A.2'), br(),br())
+                                         ),
+                                         tabsetPanel(
+                                           tabPanel("Plots",
+                                                    fluidRow(
+                                                      column(6,
+                                                             br(),br(),
+                                                             plotOutput("capDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("currDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("MeasMFDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("isenEffyPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             style='padding-left:0px;'
+                                                      ),
+                                                      column(6,
+                                                             br(),br(),
+                                                             plotOutput("powDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("EERDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("CalcMFDifPlot2A"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("volEffyPlot2A"),
+                                                             style='padding-right:0px;'
+                                                      ))
+                                           ),
+                                           tabPanel("Table",
+                                                    div(formattableOutput("compareTable2A"), # style = "height:600px; overflow-y: scroll;overflow-x: scroll;",
+                                                        fixedHeader=T))
+                                         ) #, style='width: 1000px; height: 1000px' 
+                                         #end tabsets
+                        ), #end conditional panel
+                        
+                        #second conditional panel
+                        conditionalPanel(condition = "input.choice2 == 'both2'",
+                                         fluidRow(
+                                           column(6,
+                                                  "Paste coefficients here first.",br(),br(),
+                                                  actionButton("paste2B", "Paste",style="background-color: #98FB97"),
+                                                  br(),br(),br(),
+                                                  dataTableOutput("table2B")
+                                           ),
+                                           column(6,
+                                                  "Accepts .csv file type and must contain at least 12 unique test points.",
+                                                  br(),br(),
+                                                  fileInput("upload2B", "File Upload", multiple=F, accept=c(".csv"), width = '400px'),
+                                                  dataTableOutput("createCoeffs2B")
+                                           )),
+                                         
+                                         tabsetPanel(
+                                           tabPanel("Plots",
+                                                    fluidRow(
+                                                      column(6,
+                                                             br(), br(),
+                                                             plotOutput("capDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("currDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("MeasMFDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("isenEffyPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                      ),
+                                                      column(6,
+                                                             br(),br(),
+                                                             plotOutput("powDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("EERDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("CalcMFDifPlot2B"),
+                                                             br(),br(),br(),br(),br(),
+                                                             plotOutput("volEffyPlot2B")     
+                                                      ))),
+                                           tabPanel("Table",
+                                                    formattableOutput("compareTable2B") #style = "height:600px; overflow-y: scroll;overflow-x: scroll;"),    
+                                           )
+                                         )
+                        )#end conditional panel
+                      ))
+  ))#end navbar and ui
+
 
 ####################################################
 
@@ -585,7 +622,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0) 
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     powPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                 cond = numeric(numTotal1A),
@@ -606,7 +643,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     currPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                  cond = numeric(numTotal1A),
@@ -627,7 +664,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     EERPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                 cond = numeric(numTotal1A),
@@ -645,7 +682,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     measMFPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                    cond = numeric(numTotal1A),
@@ -666,7 +703,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     calcMFPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                    cond = numeric(numTotal1A)) %>%
@@ -689,7 +726,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     massFlowDiff1A <- data.frame(evap = numeric(numTotal1A),
                                  cond = numeric(numTotal1A),
@@ -710,7 +747,7 @@ server <- function(input, output, session) {
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
         coord_cartesian(ylim=c(-.02,.05))
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     isenEffy1A <- data.frame(evap = numeric(numTotal1A),
                              cond = numeric(numTotal1A)) %>%
@@ -739,7 +776,7 @@ server <- function(input, output, session) {
         scale_y_continuous(labels = scales::percent) +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     volEffy1A <- data.frame(evap = numeric(numTotal1A),
                             cond = numeric(numTotal1A)) %>%
@@ -762,7 +799,7 @@ server <- function(input, output, session) {
         scale_y_continuous(labels = scales::percent) +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     
   })#end observe event
@@ -796,14 +833,15 @@ server <- function(input, output, session) {
     MeasMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
     CalcMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MassFlow)
     
-    # #output cook's distance table
+    #output cook's distance table
+    ### this version of the table is ideal but not compatible with the action button to delete rows
     # output$cooksDist = renderFormattable({
     #   formattable(cooksDistance, list(
     #     CAP = color_tile("white", "steelblue3"),
     #     POW = color_tile("white", "steelblue3"),
     #     CURR = color_tile("white", "steelblue3"),
     #     MeasMF = color_tile("white", "steelblue3")
-    #   ), caption = "Cook's Distance") 
+    #   ), caption = "Cook's Distance")
     # }) #end output
     
     #creates button inside table for removing rows based on results of cook's dist.
@@ -818,7 +856,7 @@ server <- function(input, output, session) {
     RVChoice1B$uploadDF1B[,c(1,2)] <- round(RVChoice1B$uploadDF1B[,c(1,2)],1)
     colnames(RVChoice1B$uploadDF1B) <- c("Evap", "Cond", "Remove", "CAP", "CD_CAP", "POW", "CD_POW", "CURR", "CD_CURR", "MeasMF", "CD_MMF", "CalcMF", "CD_CMF")
     
-    iso <- isolate(RVChoice1B$uploadDF1B)
+    iso <- RVChoice1B$uploadDF1B
     #which rows to remove
     cutoffValue <- round(4/(length(iso[,1])),4)
     delete <- which(iso[,5] > cutoffValue)
@@ -836,7 +874,7 @@ server <- function(input, output, session) {
       str1.5 <- paste("The higher the Cook's distance value is, the more influence that test point likely has.")
       str2 <- paste("The standard cutoff for outlier removal is", cutoffValue, "(4/n). Rows", flatList, "are recommended for removal.")
       HTML(paste(str1, str1.5, str2))
-      })
+    })
     
     ####action button within DT is preventing me from coloring cell backgrounds with formatStyle()
     output$uploadDeleteRows = DT::renderDataTable(
@@ -867,7 +905,7 @@ server <- function(input, output, session) {
     
     #calculate curve % shift
     output$shiftOutput2 = renderText({
-      conditionString <- input$condition
+      conditionString <- input$condition2
       condition = input$condition2 %>%
         str_split_fixed(pattern = '/',n = 2) %>%
         as.numeric()
@@ -878,8 +916,8 @@ server <- function(input, output, session) {
       
       str1 <- paste("Capacity at", conditionString, ":", shift[3])
       str2 <- paste("Power at", conditionString, ":", shift[4])
-      str3 <- paste("Shift capacity", shift[1], "OR shift power", shift[2], "to achieve desired EER") 
-      HTML(paste(str1,str2,'<br/>','<br/>',str3))
+      str3 <- paste(strong("Shift capacity", shift[1], "OR shift power", shift[2], "to achieve desired EER")) 
+      HTML(paste(str1,str2,'<br/>',str3))
     })
     
   })
@@ -919,7 +957,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     powPlotVals1B <- data.frame(evap = numeric(numTotal),
                                 cond = numeric(numTotal),
@@ -940,7 +978,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     currPlotVals1B <- data.frame(evap = numeric(numTotal),
                                  cond = numeric(numTotal),
@@ -961,7 +999,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     EERPlotVals1B <- data.frame(evap = numeric(numTotal),
                                 cond = numeric(numTotal),
@@ -979,7 +1017,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700)#end output
+    }, height = 450, width = 580)#end output
     
     measMFPlotVals1B <- data.frame(evap = numeric(numTotal),
                                    cond = numeric(numTotal),
@@ -1000,7 +1038,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     calcMFPlotVals1B <- data.frame(evap = numeric(numTotal),
                                    cond = numeric(numTotal),
@@ -1021,7 +1059,7 @@ server <- function(input, output, session) {
         theme_bw() +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     massFlowDiff1B <- data.frame(evap = numeric(numTotal),
                                  cond = numeric(numTotal),
@@ -1042,7 +1080,7 @@ server <- function(input, output, session) {
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
         coord_cartesian(ylim=c(-.02,.05))
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     isenEffy1B <- data.frame(evap = numeric(numTotal),
                              cond = numeric(numTotal)) %>%
@@ -1072,7 +1110,7 @@ server <- function(input, output, session) {
         scale_y_continuous(labels = scales::percent) +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
     volEffy1B <- data.frame(evap = numeric(numTotal),
                             cond = numeric(numTotal)) %>%
@@ -1095,7 +1133,7 @@ server <- function(input, output, session) {
         scale_y_continuous(labels = scales::percent) +
         theme(panel.grid.major = element_line(colour = "darkgrey")) +
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 580) #end output
     
   }) #end observe event, calculate button
   
@@ -1319,7 +1357,7 @@ server <- function(input, output, session) {
                                     style = x ~ style(color = ifelse(x < 0, "red", "green")),
                                     x ~ icontext(ifelse(x>0, "arrow-up", "arrow-down")))
         
-      ), extensions = c('FixedHeader'),
+      ), extensions = c('FixedHeader'), #fixedheader extension is ignored here :(
       caption = "Error columns calculated by equation (Model1_Value - Model2_Value) / Model1_Value * 100", 
       options=list(paging=F))
     }) #end output
@@ -1350,7 +1388,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Capacity", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #POW DIF PLOT
     output$powDifPlot2A = renderPlot({
@@ -1378,7 +1416,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Power", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #CURR DIF PLOT
     output$currDifPlot2A = renderPlot({
@@ -1406,7 +1444,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Current", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #EER DIF PLOT
     output$EERDifPlot2A = renderPlot({
@@ -1434,7 +1472,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - EER", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #MEAS MF DIF PLOT
     output$MeasMFDifPlot2A = renderPlot({
@@ -1462,7 +1500,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Measured Mass Flow", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #CALC MF DIF PLOT
     output$CalcMFDifPlot2A = renderPlot({
@@ -1490,7 +1528,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Calculated Mass Flow", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #ISEN EFFY DIF PLOT
     output$isenEffyPlot2A = renderPlot({
@@ -1518,7 +1556,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Isentropic Efficiency", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #VOL EFFY DIF PLOT
     output$volEffyPlot2A = renderPlot({
@@ -1546,7 +1584,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Volumetric Efficiency", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
   })
   
@@ -1732,6 +1770,7 @@ server <- function(input, output, session) {
     
     output$compareTable2B = renderFormattable({
       formattable(comparisonDF2B, list(
+        # style = formatter("span", x ~ style("font-size:10px;")),
         'Evap' = formatter("span", style = x ~ style("font-weight" = "bold")),
         'Cond' = formatter("span", style = x ~ style("font-weight" = "bold")),
         'Error_CAP' = formatter("span",
@@ -1796,7 +1835,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Capacity", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #POW DIF PLOT
     output$powDifPlot2B = renderPlot({
@@ -1824,7 +1863,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Power", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #CURR DIF PLOT
     output$currDifPlot2B = renderPlot({
@@ -1852,7 +1891,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Current", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #EER DIF PLOT
     output$EERDifPlot2B = renderPlot({
@@ -1880,7 +1919,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - EER", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #MEAS MF DIF PLOT
     output$MeasMFDifPlot2B = renderPlot({
@@ -1908,7 +1947,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Measured Mass Flow", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #CALC MF DIF PLOT
     output$CalcMFDifPlot2B = renderPlot({
@@ -1936,7 +1975,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Calculated Mass Flow", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #ISEN EFFY DIF PLOT
     output$isenEffyPlot2B = renderPlot({
@@ -1964,7 +2003,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Isentropic Efficiency", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
     #VOL EFFY DIF PLOT
     output$volEffyPlot2B = renderPlot({
@@ -1992,7 +2031,7 @@ server <- function(input, output, session) {
         scale_x_continuous(breaks = seq((min(envel$evapEnv)-10),(max(envel$evapEnv)+10),10)) +
         scale_y_continuous(breaks = seq((min(envel$condEnv)-10),(max(envel$condEnv)+10),10)) +
         labs(title= "Two Model Comparison - Volumetric Efficiency", y="Condenser Temperature (F)", x = "Evaporator Temperature (F)")
-    }, height = 500, width = 700) #end output
+    }, height = 450, width = 570) #end output
     
   })
   
