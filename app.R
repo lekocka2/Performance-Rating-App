@@ -34,7 +34,7 @@ ui <- fluidPage(
              tabPanel("About",
                       fluidRow(column(12,
                                       h2("This application allows for easy creation, manipulation, and comparison of coefficients."),
-                                      h6("Created by Logan Kocka in Spring 2020 under Tony Dahlinghaus."),
+                                      h6("Created by Logan Kocka in Spring 2020 for AC Unitary NPD group."),
                                       h6("Contact Bryan Penkal with questions or maintenance requests."),br())),
                       sidebarLayout(
                         sidebarPanel(width=9,
@@ -92,7 +92,7 @@ ui <- fluidPage(
                                               "Cook's distance is is used to quantitatively estimate the influence (and likelihood that it's an outlier) of a data point in a regression model.",
                                               "The higher the Cook's distance value is, the more influence that test point likely has on the model.",br(),
                                               "The standard cutoff for outlier removal is 4/n. Points with values above this are generally removed.",br(),
-                                              "Click a row's 'Remove' button to delete it from the data set. Note the recommendation for which rows you might consider removing based on the cutoff value.",br(),
+                                              "Click on a row to remove it from the data set. Reselect to include it. Note the recommendation for which rows you might consider removing based on the cutoff value.",br(),
                                               "Click the 'Calculate/Reset button to generate coefficients from the remaining test data.", br(),
                                               
                                               h3("Comparison Tab"),
@@ -244,6 +244,7 @@ ui <- fluidPage(
                                          fluidRow(
                                            column(12,
                                                   textOutput("omitThese"),br(),
+                                                  textOutput("click"),br(),
                                                   DT::dataTableOutput("uploadDeleteRows")
                                            )),
                                          br(),
@@ -423,7 +424,7 @@ ui <- fluidPage(
                                                              plotOutput("MeasMFDifPlot2B"),
                                                              br(),br(),br(),br(),br(),
                                                              plotOutput("isenEffyPlot2B"),
-                                                             br(),br(),br(),br(),br(),
+                                                             br(),br(),br(),br(),br()
                                                       ),
                                                       column(6,
                                                              br(),br(),
@@ -832,38 +833,23 @@ server <- function(input, output, session) {
     CURR <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Current)
     MeasMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
     CalcMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MassFlow)
-    
-    #output cook's distance table
-    ### this version of the table is ideal but not compatible with the action button to delete rows
-    # output$cooksDist = renderFormattable({
-    #   formattable(cooksDistance, list(
-    #     CAP = color_tile("white", "steelblue3"),
-    #     POW = color_tile("white", "steelblue3"),
-    #     CURR = color_tile("white", "steelblue3"),
-    #     MeasMF = color_tile("white", "steelblue3")
-    #   ), caption = "Cook's Distance")
-    # }) #end output
-    
-    #creates button inside table for removing rows based on results of cook's dist.
-    Delete = shinyInput(actionButton, numRows, 'button_', label = "Remove", onclick = 'Shiny.onInputChange(\"select_button\", this.id)')
-    
-    RVChoice1B$uploadDF1B = cbind.data.frame(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, Delete, RVChoice1B$uploadDF1B$Capacity, CAP,
+  
+    RVChoice1B$uploadDF1B = cbind.data.frame(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Capacity, CAP,
                                              RVChoice1B$uploadDF1B$Power, POW, RVChoice1B$uploadDF1B$Current, CURR, RVChoice1B$uploadDF1B$MeasMassFlow,
                                              MeasMF, RVChoice1B$uploadDF1B$MassFlow, CalcMF, stringsAsFactors = F)
     #rouding
-    RVChoice1B$uploadDF1B[,c(4,6,8,10,12)] <- round(RVChoice1B$uploadDF1B[,c(4,6,8,10,12)],2)
-    RVChoice1B$uploadDF1B[,c(5,7,9,11,13)] <- round(RVChoice1B$uploadDF1B[,c(5,7,9,11,13)],5)
+    RVChoice1B$uploadDF1B[,c(3,5,7,9,11)] <- round(RVChoice1B$uploadDF1B[,c(3,5,7,9,11)],2)
+    RVChoice1B$uploadDF1B[,c(4,6,8,10,12)] <- round(RVChoice1B$uploadDF1B[,c(4,6,8,10,12)],5)
     RVChoice1B$uploadDF1B[,c(1,2)] <- round(RVChoice1B$uploadDF1B[,c(1,2)],1)
-    colnames(RVChoice1B$uploadDF1B) <- c("Evap", "Cond", "Remove", "CAP", "CD_CAP", "POW", "CD_POW", "CURR", "CD_CURR", "MeasMF", "CD_MMF", "CalcMF", "CD_CMF")
+    colnames(RVChoice1B$uploadDF1B) <- c("Evap", "Cond", "CAP", "CD_CAP", "POW", "CD_POW", "CURR", "CD_CURR", "MeasMF", "CD_MMF", "CalcMF", "CD_CMF")
     
-    iso <- RVChoice1B$uploadDF1B
     #which rows to remove
-    cutoffValue <- round(4/(length(iso[,1])),4)
-    delete <- which(iso[,5] > cutoffValue)
-    delete1 <- which(iso[,7] > cutoffValue)
-    delete2 <- which(iso[,9] > cutoffValue)
-    delete3 <- which(iso[,11] > cutoffValue)
-    delete4 <- which(iso[,13] > cutoffValue)
+    cutoffValue <- round(4/(length(RVChoice1B$uploadDF1B[,1])),4)
+    delete <- which(RVChoice1B$uploadDF1B[,4] > cutoffValue)
+    delete1 <- which(RVChoice1B$uploadDF1B[,6] > cutoffValue)
+    delete2 <- which(RVChoice1B$uploadDF1B[,8] > cutoffValue)
+    delete3 <- which(RVChoice1B$uploadDF1B[,10] > cutoffValue)
+    delete4 <- which(RVChoice1B$uploadDF1B[,12] > cutoffValue)
     
     listoflists <- c(delete, delete1, delete2, delete3, delete4)
     listoflists <- listoflists[!is.na(listoflists)] #get rid of empty lists
@@ -876,28 +862,46 @@ server <- function(input, output, session) {
       HTML(paste(str1, str1.5, str2))
     })
     
-    ####action button within DT is preventing me from coloring cell backgrounds with formatStyle()
-    output$uploadDeleteRows = DT::renderDataTable(
-      RVChoice1B$uploadDF1B,
-      options = list(ordering=F),
-      server = FALSE, escape = FALSE, selection = 'none'
-    )
+    output$click = renderText({
+      "Click to select/deselect rows. Selected rows (blue hightlight) are omitted from coefficient calculations."
+    })
     
-    observeEvent(input$select_button, {
-      selectedRow <- as.numeric(strsplit(input$select_button, "_")[[1]][2])
-      RVChoice1B$uploadDF1B <- RVChoice1B$uploadDF1B[rownames(RVChoice1B$uploadDF1B) != selectedRow, ]
+    output$uploadDeleteRows <- DT::renderDataTable({
+      datatable(
+        RVChoice1B$uploadDF1B,
+        selection = list(mode = "multiple"),
+        options = list(ordering=F)
+      )
     })
     
   }) #end observe event, upload
   
+  
   #option to shift curves up or down by %
   observeEvent(input$calculate, {
-    uploadDF1B <- isolate(RVChoice1B$uploadDF1B[,c(1,2,4,6,8,10,12)])
-    RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(uploadDF1B$Evap, uploadDF1B$Cond, uploadDF1B$CAP)
-    RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(uploadDF1B$Evap, uploadDF1B$Cond, uploadDF1B$POW)
-    RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(uploadDF1B$Evap, uploadDF1B$Cond, uploadDF1B$CURR)
-    RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(uploadDF1B$Evap, uploadDF1B$Cond, uploadDF1B$MeasMF)
-    RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(uploadDF1B$Evap, uploadDF1B$Cond, uploadDF1B$CalcMF)
+    
+    ids <- input$uploadDeleteRows_rows_selected
+    
+    filteredDF_selected <- reactive({
+      ids <- input$uploadDeleteRows_rows_selected
+      if(length(ids)){
+        RVChoice1B$uploadDF1B[-c(ids),]
+      }
+    })
+    
+    if(length(ids)){
+      RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CAP)
+      RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$POW)
+      RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CURR)
+      RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$MeasMF)
+      RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CalcMF)
+    } else {
+      RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CAP)
+      RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$POW)
+      RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CURR)
+      RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$MeasMF)
+      RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CalcMF)
+    }
     
     output$createCoeffs1B <- renderTable({
       RVChoice1B$newCoef1B}, digits = 8
