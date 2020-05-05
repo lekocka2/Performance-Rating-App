@@ -12,7 +12,7 @@ library(reshape2)
 library(pracma)
 library(readr) 
 library(lubridate)
-library(zoo)
+library(zoo)    # Bryan Is The Coolest!
 library(shinycssloaders) 
 library(devtools)
 library(rhandsontable)
@@ -114,16 +114,16 @@ ui <- fluidPage(
                         ))),
              
              tabPanel("Create",
-                      #Text
+                      #makes coefficients from test data or laods coefficients, then allows for manipulation and plotting
                       fluidRow(column(12,
                                       h4("Make Coefficients and Curves"),
                                       "Use this tab to manipulate existing coefficients, create new from rating ELT data, and render performance curves.",br(),br(),
                                       "")),
                       #Sidebar panel with inputs
-                      sidebarPanel(width=3,
+                      sidebarPanel(width=2,
                                    style="max-height: 585px;",
                                    fluidRow(
-                                     column(6,
+                                     column(12,
                                             h4("Inputs"),br(),
                                             radioButtons("choice1", "Import Type",
                                                          c("Coefficients" = "coeffsChoice1",
@@ -134,18 +134,20 @@ ui <- fluidPage(
                                             numericInput("sh", "Superheat", value=20, width='115px'),
                                             numericInput("sc", "Subcooling", value=15, width='115px'),
                                             numericInput("displacement", "Displacement", value=NULL, width='115px'),
-                                            style='padding-left:20px;'
-                                     ),
-                                     column(6,br(),br(),br(),
-                                            "Mins, maxes, and increments define ranges of plot values.",br(),
-                                            numericInput("minEvap", "Min Evap", value=-10, width='115px'),
-                                            numericInput("maxEvap", "Max Evap", value=60, width='115px'),
-                                            numericInput("incEvap", "Evap Incr", value=5, width='115px'),
-                                            numericInput("minCond", "Min Cond", value=80, width='115px'),
-                                            numericInput("maxCond", "Max Cond", value=150, width='115px'),
-                                            numericInput("incCond", "Cond Incr", value=10, width='115px'),
-                                            style='padding-left:15px;padding-right:10px;'
-                                     ))),
+                                            style='padding-left:20px; padding-right:0px'
+                                     )
+                                     # column(6,br(),br(),br(),
+                                     #        "Mins, maxes, and increments define ranges of plot values.",br(),
+                                     #        numericInput("minEvap", "Min Evap", value=-10, width='115px', step=5),
+                                     #        numericInput("maxEvap", "Max Evap", value=60, width='115px', step=5),
+                                     #        numericInput("incEvap", "Evap Incr", value=5, width='115px'),
+                                     #        numericInput("minCond", "Min Cond", value=80, width='115px', step=5),
+                                     #        numericInput("maxCond", "Max Cond", value=150, width='115px', step=5),
+                                     #        numericInput("incCond", "Cond Incr", value=10, width='115px'),
+                                     #        style='padding-left:15px;padding-right:10px;'
+                                     # )
+                                     )
+                                   ),
                       
                       mainPanel(
                         #conditional 1
@@ -159,7 +161,7 @@ ui <- fluidPage(
                                                   actionButton("paste", "Paste"),br(),
                                                   strong("To copy:"),
                                                   "Unprotect sheet, select cells, change type to 'number',", br(),
-                                                  "increase # decimals (important!) to desired number, press ctrl+c",br(),br(),
+                                                  "increase # decimals (important!) to desired number, press ctrl+c. (See 'About' tab for more details)",br(),br(),
                                                   dataTableOutput("table1A", width='100px'),br(),
                                                   style='padding-left:50px;'
                                            ),
@@ -301,7 +303,7 @@ ui <- fluidPage(
              #########################################################
              #second tab
              tabPanel("Compare",
-                      
+                      #loads two sets of coefficients or one coef one rating ELT file, compares the two in relevant metrics
                       h4("Compare Compressors"),
                       wellPanel(width = 12,
                                 fluidRow(
@@ -328,11 +330,10 @@ ui <- fluidPage(
                                   ),
                                   column(6,
                                          selectInput("envel", "Envelope:", 
-                                                     c("Fixed Speed"="fixedspeed", 
-                                                       "Two Stage"="twostage", 
-                                                       "Other"="other"), width='140px'),
+                                                     c("Standard"="standard",
+                                                       "Custom"="custom"), width='140px'),
                                          
-                                         conditionalPanel(condition = "input.envel == 'other'",
+                                         conditionalPanel(condition = "input.envel == 'custom'",
                                                           column(6,
                                                                  textInput("evapEnvTemps", "Evap (F) Envelope Coords", value = "-20,-20,35,55,55")),
                                                           # style='padding-left:0px'),
@@ -347,7 +348,7 @@ ui <- fluidPage(
                       mainPanel(
                         h4("Load Coefficients"),
                         strong("To copy:"),
-                        "Unprotect sheet, select cells, change type to 'number', increase # decimals (important!) to desired number, press ctrl+c",
+                        "Unprotect sheet, select cells, change type to 'number', increase # decimals (important!) to desired number, press ctrl+c. (See 'About' tab for more details)",
                         br(), br(),
                         #first conditional panel
                         conditionalPanel(condition = "input.choice2 == 'coeffs2'",
@@ -468,14 +469,14 @@ server <- function(input, output, session) {
                                      POW = pasted1A[11:20],
                                      CURR = pasted1A[21:30],
                                      MF = pasted1A[31:40])
-      
+      #RESET button
       output$table1A = renderDataTable({
         datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
                   callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                   options=list(dom='t', ordering=F, digits=8))
       })
     })
-    
+    #pastes coefs
     RV$pastedCoeffs1 <- data.frame(CAP = pasted1A[1:10],
                                    POW = pasted1A[11:20],
                                    CURR = pasted1A[21:30],
@@ -506,6 +507,8 @@ server <- function(input, output, session) {
       if (!is.null(hot)) as.data.frame(hot_to_r(hot))
     })
     
+    
+    
     output$addPts <- renderRHandsontable({
       rhandsontable(RV$data.in)
     })
@@ -515,14 +518,24 @@ server <- function(input, output, session) {
       hotDF <- data()
       
       #create plot values
-      evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-      condPlot <- seq(input$minCond,input$maxCond,input$incCond)
-      numTotal1A <- length(evapPlot)*length(condPlot)
+      # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
+      # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
+      # numTotal1AA <- length(evapPlot)*length(condPlot)
+      # 
+      # addingDF <- data.frame(evap = numeric(numTotal1AA),
+      #                        cond = numeric(numTotal1AA)) %>%
+      #   mutate(evap = rep_len(evapPlot, numTotal1AA),
+      #          cond = rep_len(condPlot, numTotal1AA))
       
-      addingDF <- data.frame(evap = numeric(numTotal1A),
-                             cond = numeric(numTotal1A)) %>%
-        mutate(evap = rep_len(evapPlot, numTotal1A),
-               cond = rep_len(condPlot, numTotal1A))
+      evapPlot <- seq(-10,60,5)
+      condPlot <- seq(80,150,10)
+      numTotal1AA <- length(evapPlot)*length(condPlot)
+
+      addingDF <- data.frame(evap = numeric(numTotal1AA),
+                             cond = numeric(numTotal1AA)) %>%
+        mutate(evap = rep_len(evapPlot, numTotal1AA),
+               cond = rep_len(condPlot, numTotal1AA))
+      
       
       addingDF$Capacity <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$CAP[1],
                                   RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
@@ -542,17 +555,27 @@ server <- function(input, output, session) {
                                 RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
       
       ###below is using data from handsontable inputs
-      evaps <- as.numeric(hotDF[,1])
-      conds <- as.numeric(hotDF[,2])
+      evaps <- as.numeric(isolate(hotDF[,1]))
+      conds <- as.numeric(isolate(hotDF[,2]))
+      print(evaps)
       #get indices of extisting conditions that need replaced
-      indices <- list()
-      for(i in 1:length(evaps)){
-        indices[[i]] <- which(addingDF[,1] == evaps[i] & addingDF[,2] == conds[i])
+      for(i in input$numPtsAdded){
+        evapIndx <- unlist(sapply(addingDF$evap, function(y) match(y,evaps[i])))
       }
-      indices <- unlist(indices) #flatten list
+      realIndE <- which(evapIndx == 1)
+      print(realIndE)
+      
+      for(i in input$numPtsAdded){
+        condIndx <- unlist(sapply(addingDF$cond, function(y) match(y,conds[i])))
+      }
+      realIndC <- which(condIndx == 1)
+      print(realIndC)
+      
+      indices <- Reduce(intersect, list(realIndE, realIndC))
+      
       print(indices)
-      print(addingDF)
-      addingDF %>% filter(!row_number() %in% indices)
+      frame <- addingDF[-c(indices),]
+      print(frame)
       
       #add in extra test points at bottom of df
       el1 <- as.numeric(append(frame$evap, hotDF$Evap))
@@ -560,7 +583,8 @@ server <- function(input, output, session) {
       el3 <- as.numeric(append(frame$Capacity, hotDF$Cap))
       el4 <- as.numeric(append(frame$Power, hotDF$Pow))
       el5 <- as.numeric(append(frame$Current, hotDF$Curr))
-      el6 <- as.numeric(append(frame$MF, hotDF$MF))
+      el6 <- as.numeric(append(frame$MeasMF, hotDF$MF))
+      print(el6)
       #make coefficients with lm
       RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(el1, el2, el3)
       RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(el1, el2, el4)
@@ -593,8 +617,10 @@ server <- function(input, output, session) {
   observeEvent(input$adjust, {
     
     #create plot values
-    evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-    condPlot <- seq(input$minCond,input$maxCond,input$incCond)
+    # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
+    # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
+    evapPlot <- seq(-10,60,5)
+    condPlot <- seq(80,150,10)
     numTotal1A <- length(evapPlot)*length(condPlot)
     
     RV$pastedCoeffs1$CAP <- RV$pastedCoeffs1$CAP*input$adjCap
@@ -833,7 +859,7 @@ server <- function(input, output, session) {
     CURR <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Current)
     MeasMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
     CalcMF <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MassFlow)
-  
+    
     RVChoice1B$uploadDF1B = cbind.data.frame(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Capacity, CAP,
                                              RVChoice1B$uploadDF1B$Power, POW, RVChoice1B$uploadDF1B$Current, CURR, RVChoice1B$uploadDF1B$MeasMassFlow,
                                              MeasMF, RVChoice1B$uploadDF1B$MassFlow, CalcMF, stringsAsFactors = F)
@@ -853,7 +879,7 @@ server <- function(input, output, session) {
     
     listoflists <- c(delete, delete1, delete2, delete3, delete4)
     listoflists <- listoflists[!is.na(listoflists)] #get rid of empty lists
-    flatList <- toString(unique(unlist(listoflists))) #flatten list, remove duplciates, and change to string for printing
+    flatList <- toString(sort(unique(unlist(listoflists)))) #flatten list, remove duplciates, sort, and change to string for printing
     
     output$omitThese = renderText({
       str1 <- paste("Cook's distance is used to quantitatively estimate the influence (and likelihood that it's an outlier) of a data point in a regression model.")
@@ -938,8 +964,10 @@ server <- function(input, output, session) {
     RVChoice1B$newCoef1B <- coefAdjust
     
     #create plot values
-    evapPlot <- seq(as.numeric(input$minEvap),as.numeric(input$maxEvap),as.numeric(input$incEvap))
-    condPlot <- seq(as.numeric(input$minCond),as.numeric(input$maxCond),as.numeric(input$incCond))
+    # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
+    # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
+    evapPlot <- seq(-10,60,5)
+    condPlot <- seq(80,150,10)
     numTotal <- as.numeric(length(evapPlot)*length(condPlot))
     
     capPlotVals1B <- data.frame(evap = numeric(numTotal),
@@ -1191,7 +1219,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$paste2A.2, {
     #create envelope
-    if(input$envel == 'other') {
+    if(input$envel == 'custom') {
       evapEnv <- input$evapEnvTemps %>%
         str_split_fixed(pattern = ',',n = str_count(input$evapEnvTemps,',') +1) %>%
         as.numeric()
@@ -1199,14 +1227,14 @@ server <- function(input, output, session) {
         str_split_fixed(pattern = ',',n = str_count(input$condEnvTemps,',') +1) %>%
         as.numeric()
     }
-    if(input$envel == 'fixedspeed') {
-      evapEnv <- c(-10,-10,10,40,55,55)
-      condEnv <- c(80,100,115,145,145,80)
-    }
-    if(input$envel == 'twostage'){
+    if(input$envel == 'standard') {
       evapEnv <- c(-10,-10,40,55,55)
       condEnv <- c(80,100,145,145,80)
     }
+    # if(input$envel == 'twostage'){
+    #   evapEnv <- c(-10,-10,40,55,55)
+    #   condEnv <- c(80,100,145,145,80)
+    # }
     #the below uses the envelope_builder function of the refprop package
     Boundary = as.data.frame(cbind(evapEnv, condEnv))
     Test_Data = Envelope_Builder(Boundary, 10)
@@ -2045,8 +2073,4 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-
-
-
 
