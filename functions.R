@@ -30,14 +30,15 @@ getCooks <- function(testedTeTemps, testedTcTemps, metricStoredValues){
   return(cooks.distance(mod))
 }
 
-#allows for row deletion within table
-shinyInput <- function(FUN, len, id, ...) {
-  inputs <- character(len)
-  for (i in seq_len(len)) {
-    inputs[i] <- as.character(FUN(paste0(id, i), ...))
-  }
-  inputs
-}
+######## no longer used in app
+# #allows for row deletion within table
+# shinyInput <- function(FUN, len, id, ...) {
+#   inputs <- character(len)
+#   for (i in seq_len(len)) {
+#     inputs[i] <- as.character(FUN(paste0(id, i), ...))
+#   }
+#   inputs
+# }
 
 env_points <- function (evapInputs, condInputs) {
   # Returns the envelope boundary points
@@ -60,10 +61,9 @@ curveShift <- function(evap, cond, Ccoefs, Pcoefs, desiredEER){
                   Pcoefs[6],Pcoefs[7],Pcoefs[8],Pcoefs[9],Pcoefs[10])
   xcap = (simPOW*desiredEER)/simCAP
   xpow = (simCAP/desiredEER)/simPOW
-  shiftList <- as.numeric(c(xcap,xpow))
+  shiftList <- as.numeric(c(xcap,xpow, simCAP, simPOW))
   return(shiftList)
 }
-
 
 
 
