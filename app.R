@@ -37,7 +37,7 @@ ui <- fluidPage(
                                       h6("Created by Logan Kocka in Spring 2020 for AC Unitary NPD group."),
                                       h6("Contact Bryan Penkal with questions or maintenance requests."),br())),
                       sidebarLayout(
-                        sidebarPanel(width=9,
+                        sidebarPanel(width=7,
                                      fluidRow(
                                        column(12,
                                               h2("How to Use"),
@@ -108,7 +108,73 @@ ui <- fluidPage(
                                               style='padding-left:30px;'
                                        ))),
                         
-                        mainPanel(
+                        mainPanel(width=5,
+                          column(12, 
+                                 br(),h2("How It Works"),
+                                 h3("Units"),
+                                 "Units are standard English units and constant throughout.", br(),br(),
+                                 column(3,
+                                        "Capacity: BTU/hr",br(),
+                                        "Power: Watts", br(),
+                                        "Current: Amps",
+                                        style="padding:'0px"
+                                 ),
+                                 column(3,
+                                        "EER: BTU/W/hr", br(),
+                                        "Mass Flow: lbm/hr",
+                                        style="padding:'0px"
+                                 ),
+                                 column(4,
+                                        "Temperature: degrees Fahrenheit", br(),
+                                        "Displacement: Cu In/rev",
+                                        style="padding:'0px"
+                                 ),br(),br(),br(),
+                                
+                                 h3("Background Calculations"),
+                                 "The app utilizes an Emerson REFPROP R library created by Abram Yorde. This library implements CoolProp functionality 
+                                 for thermodynamic calculations.",br(),br(),
+                                 
+                                 strong("Simulated Values"), br(),
+                                 "are calculated using the funtion",br(),
+                                 "C0 + C1*Te + C2*Tc + C3*(Te^2) + C4*Tc*Te + C5*(Tc^2) + C6*(Te^3) + C7*Tc*(Te^2) + C8*Te*(Tc^2) + C9*(Tc^3)",br(),
+                                 "where", br(),
+                                 " -- C0-C9 = ten point coefficients",br(),
+                                 " -- Te = evaporator temperature",br(),
+                                 " -- Tc = condenser temperature",br(),
+                                 "This function can be found on any coefficients Excel sheet published to CPIDView.",br(),br(),
+                                 
+                                 strong("Coeffcients"), br(),
+                                 "are calculated by reverse engineering the above function.",br(),
+                                 "A linear regression model is created where",br(),
+                                 " -- Response variable = known metric (cap, pow, curr..) value", br(),
+                                 " -- Predictors = Te, Tc, Tc*Te, Tc^2, ... (from the function above)", br(),
+                                 "Coefficients calculated by the linear model are then extracted using an open-souce R function.",br(),br(),
+                                 
+                                 strong("Calculated mass flow"),br(),
+                                 "is calculated using the equation Capacity / H1 - H2 where",br(),
+                                 " -- H1 = enthalpy calculated from evap temp + superheat and suction pressure",br(),
+                                 " -- H2 = enthalpy calculated from cond temp - subcooling and discharge pressure", br(),br(),
+                                 
+                                 strong("Isentropic Efficiency"),br(),
+                                 "is calculated from the ratio EE/TEER where TEER is calculated using the equation",
+                                 "(ReturnGasH - SubcoolLiqH) / (DischargeGasIdealH - ReturnGasH) * 3.412 where", br(),
+                                 " -- ReturnGasH = enthalpy calculated using evap temp + superheat and suction pressure",br(),
+                                 " -- SubcoolLiqH = enthalpy calculated using discharge temp - subcooling and discharge pressure",br(),
+                                 " -- DischargeGasIdealH = enthalpy calculated using inlet entropy and discharge pressure",br(),
+                                 " -- 3.412 = fixed unit conversion",br(),br(),
+                                 
+                                 strong("Volumetric Efficiency"),br(),
+                                 "is calculated using the equation Mass Flow / (Density * Displacement * 3500 * 0.034722) where",br(),
+                                 " -- Density = calculated from evap temp + superheat and suction pressure, multiplied by 1728 unit conversion factor",br(),
+                                 " -- Displacement = input by user",br(),
+                                 " -- 3500 = fixed value for RPM",br(),
+                                 " -- 0.034722 = fixed unit conversion factor",br(),
+                                 
+                                 h3("Add Test Points"),
+                                 "Using the built in 'Add Test Points' function finds the index of the set of simulated values matching the
+                                 input evap and cond temperatures, then replaces them with the input values.",br(),
+                                 "Coefficients are then recalculated using the new data set, including the substitution."
+                          )
                         ))),
              
              tabPanel("Create",
@@ -288,11 +354,13 @@ ui <- fluidPage(
                                          style='padding-right:0px'),
                                   column(1,
                                          textInput("refrigerant2", "Refrigerant", value="R410A.mix", width='175px'),
-                                         style='padding-left:0px'
+                                         style='padding-left:0px',
+                                         textInput("model1Name", "Model 1 Name", value="Mod1")
                                   ),
                                   column(1, 
                                          numericInput("sh2", "Superheat", value=20, width='150px'),
-                                         style='padding-left:0px'
+                                         style='padding-left:0px',
+                                         textInput("model2Name", "Model 2 Name",value="Mod2")
                                   ),
                                   column(1,
                                          numericInput("sc2", "Subcooling", value=15, width='150px'),
@@ -310,12 +378,12 @@ ui <- fluidPage(
                                          conditionalPanel(condition = "input.envel == 'custom'",
                                                           column(6,
                                                                  textInput("evapEnvTemps", "Evap (F) Envelope Coords", value = "-20,-20,35,55,55")),
-                                                          # style='padding-left:0px'),
+                                                          
                                                           column(6,
                                                                  textInput("condEnvTemps", "Cond (F) Envelope Coords", value = "80,95,145,145,80"))
-                                                          # style='padding-left:0px')
-                                         )
-                                  )
+                                                          
+                                         ))
+                                  
                                 )
                       ),#end well panel
                       
@@ -1189,23 +1257,24 @@ server <- function(input, output, session) {
                                  Cond = condTest)
     
     #####first set of coefficients
-    comparisonDF2A$CAP1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CAP[1],
+    comparisonDF2A$CAP_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CAP[1],
                                   RV2$pastedCoeffs2A.1$CAP[2],RV2$pastedCoeffs2A.1$CAP[3],RV2$pastedCoeffs2A.1$CAP[4],
                                   RV2$pastedCoeffs2A.1$CAP[5],RV2$pastedCoeffs2A.1$CAP[6],RV2$pastedCoeffs2A.1$CAP[7],
                                   RV2$pastedCoeffs2A.1$CAP[8],RV2$pastedCoeffs2A.1$CAP[9],RV2$pastedCoeffs2A.1$CAP[10])
-    comparisonDF2A$POW1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$POW[1],
+    comparisonDF2A$POW_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$POW[1],
                                   RV2$pastedCoeffs2A.1$POW[2],RV2$pastedCoeffs2A.1$POW[3],RV2$pastedCoeffs2A.1$POW[4],
                                   RV2$pastedCoeffs2A.1$POW[5],RV2$pastedCoeffs2A.1$POW[6],RV2$pastedCoeffs2A.1$POW[7],
                                   RV2$pastedCoeffs2A.1$POW[8],RV2$pastedCoeffs2A.1$POW[9],RV2$pastedCoeffs2A.1$POW[10])
-    comparisonDF2A$EER1 <- comparisonDF2A$CAP1 / comparisonDF2A$POW1
-    comparisonDF2A$CURR1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CURR[1],
+    comparisonDF2A$EER_Mod1 <- comparisonDF2A$CAP_Mod1 / comparisonDF2A$POW_Mod1
+    comparisonDF2A$CURR_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CURR[1],
                                    RV2$pastedCoeffs2A.1$CURR[2],RV2$pastedCoeffs2A.1$CURR[3],RV2$pastedCoeffs2A.1$CURR[4],
                                    RV2$pastedCoeffs2A.1$CURR[5],RV2$pastedCoeffs2A.1$CURR[6],RV2$pastedCoeffs2A.1$CURR[7],
                                    RV2$pastedCoeffs2A.1$CURR[8],RV2$pastedCoeffs2A.1$CURR[9],RV2$pastedCoeffs2A.1$CURR[10])
-    comparisonDF2A$MeasMF1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$MF[1],
+    comparisonDF2A$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$MF[1],
                                      RV2$pastedCoeffs2A.1$MF[2],RV2$pastedCoeffs2A.1$MF[3],RV2$pastedCoeffs2A.1$MF[4],
                                      RV2$pastedCoeffs2A.1$MF[5],RV2$pastedCoeffs2A.1$MF[6],RV2$pastedCoeffs2A.1$MF[7],
                                      RV2$pastedCoeffs2A.1$MF[8],RV2$pastedCoeffs2A.1$MF[9],RV2$pastedCoeffs2A.1$MF[10])
+
     #calcs calc mf
     calcMF1 <- data.frame(PSuc = numeric(length(comparisonDF2A$Evap)))
     calcMF1$PSuc = mapply(refprope,'P','T',comparisonDF2A$Evap,'Q',1,input$refrigerant2)
@@ -1213,7 +1282,7 @@ server <- function(input, output, session) {
     calcMF1$T3_Q0 = mapply(refprope,'T','P',calcMF1$PDis,'Q',0,input$refrigerant2)
     calcMF1$H1 = mapply(refprope,'H','T',(comparisonDF2A$Evap + input$sh2),'P',calcMF1$PSuc,input$refrigerant2)
     calcMF1$H2 = mapply(refprope,'H','T',(calcMF1$T3_Q0 - input$sc2),'P',calcMF1$PDis,input$refrigerant2)
-    comparisonDF2A$CalcMF1 <- comparisonDF2A$CAP1 / (calcMF1$H1 - calcMF1$H2)
+    comparisonDF2A$CalcMF_Mod1 <- comparisonDF2A$CAP_Mod1 / (calcMF1$H1 - calcMF1$H2)
     #calcs isen effy
     isenTemp1 <- data.frame(PSuc = numeric(length(comparisonDF2A$Evap)))
     isenTemp1$PSuc = mapply(refprope,'P','T',comparisonDF2A$Evap,'Q',1,input$refrigerant2)
@@ -1223,34 +1292,34 @@ server <- function(input, output, session) {
     isenTemp1$ReturnGasH = mapply(refprope,'H','T',(comparisonDF2A$Evap + input$sh2),'P',isenTemp1$PSuc,input$refrigerant2)
     isenTemp1$Inlet_Entropy = mapply(refprope,'S','T',(comparisonDF2A$Evap + input$sh2),'P',isenTemp1$PSuc,input$refrigerant2)
     isenTemp1$DischargeGasIdealH = mapply(refprope,'H','P',isenTemp1$PDis,'S',isenTemp1$Inlet_Entropy,input$refrigerant2)
-    isenTemp1$EER <- comparisonDF2A$CAP1 / comparisonDF2A$POW1
+    isenTemp1$EER <- comparisonDF2A$CAP_Mod1 / comparisonDF2A$POW_Mod1
     isenTemp1$TEER <- (isenTemp1$ReturnGasH - isenTemp1$SubcoolLiqH)/(isenTemp1$DischargeGasIdealH - isenTemp1$ReturnGasH) * 3.412
     isenTemp1$isenEffy <- isenTemp1$EER / isenTemp1$TEER
-    comparisonDF2A$IsenEffy1 <- isenTemp1$isenEffy
+    comparisonDF2A$IsenEffy_Mod1 <- isenTemp1$isenEffy
     #calcs vol effy
     volTemp1 <- data.frame(Evap = comparisonDF2A$Evap)
     volTemp1$PSuc <- mapply(refprope,'P','T',volTemp1$Evap,'Q',1,input$refrigerant2)
     volTemp1$Density <- mapply(refprope, 'D', 'T', volTemp1$Evap+input$sh2, 'P', volTemp1$PSuc,input$refrigerant2)  
     volTemp1$Density <- volTemp1$Density * 1728 #conversion to lbm/ft3
-    volTemp1$mf <- comparisonDF2A$MeasMF1
+    volTemp1$mf <- comparisonDF2A$MeasMF_Mod1
     volTemp1$volEffy <- volTemp1$mf / (volTemp1$Density * input$displacement2 * 3500 * 0.034722)
-    comparisonDF2A$VolEffy1 <- volTemp1$volEffy
+    comparisonDF2A$VolEffy_Mod1 <- volTemp1$volEffy
     
     ##### second set of coefficients
-    comparisonDF2A$CAP2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CAP[1],
+    comparisonDF2A$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CAP[1],
                                   RV2$pastedCoeffs2A.2$CAP[2],RV2$pastedCoeffs2A.2$CAP[3],RV2$pastedCoeffs2A.2$CAP[4],
                                   RV2$pastedCoeffs2A.2$CAP[5],RV2$pastedCoeffs2A.2$CAP[6],RV2$pastedCoeffs2A.2$CAP[7],
                                   RV2$pastedCoeffs2A.2$CAP[8],RV2$pastedCoeffs2A.2$CAP[9],RV2$pastedCoeffs2A.2$CAP[10])
-    comparisonDF2A$POW2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$POW[1],
+    comparisonDF2A$POW_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$POW[1],
                                   RV2$pastedCoeffs2A.2$POW[2],RV2$pastedCoeffs2A.2$POW[3],RV2$pastedCoeffs2A.2$POW[4],
                                   RV2$pastedCoeffs2A.2$POW[5],RV2$pastedCoeffs2A.2$POW[6],RV2$pastedCoeffs2A.2$POW[7],
                                   RV2$pastedCoeffs2A.2$POW[8],RV2$pastedCoeffs2A.2$POW[9],RV2$pastedCoeffs2A.2$POW[10])
-    comparisonDF2A$EER2 <- comparisonDF2A$CAP2 / comparisonDF2A$POW2
-    comparisonDF2A$CURR2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CURR[1],
+    comparisonDF2A$EER_Mod2 <- comparisonDF2A$CAP_Mod2 / comparisonDF2A$POW_Mod2
+    comparisonDF2A$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CURR[1],
                                    RV2$pastedCoeffs2A.2$CURR[2],RV2$pastedCoeffs2A.2$CURR[3],RV2$pastedCoeffs2A.2$CURR[4],
                                    RV2$pastedCoeffs2A.2$CURR[5],RV2$pastedCoeffs2A.2$CURR[6],RV2$pastedCoeffs2A.2$CURR[7],
                                    RV2$pastedCoeffs2A.2$CURR[8],RV2$pastedCoeffs2A.2$CURR[9],RV2$pastedCoeffs2A.2$CURR[10])
-    comparisonDF2A$MeasMF2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$MF[1],
+    comparisonDF2A$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$MF[1],
                                      RV2$pastedCoeffs2A.2$MF[2],RV2$pastedCoeffs2A.2$MF[3],RV2$pastedCoeffs2A.2$MF[4],
                                      RV2$pastedCoeffs2A.2$MF[5],RV2$pastedCoeffs2A.2$MF[6],RV2$pastedCoeffs2A.2$MF[7],
                                      RV2$pastedCoeffs2A.2$MF[8],RV2$pastedCoeffs2A.2$MF[9],RV2$pastedCoeffs2A.2$MF[10])
@@ -1261,7 +1330,7 @@ server <- function(input, output, session) {
     calcMF2$T3_Q0 = mapply(refprope,'T','P',calcMF2$PDis,'Q',0,input$refrigerant2)
     calcMF2$H1 = mapply(refprope,'H','T',(comparisonDF2A$Evap + input$sh2),'P',calcMF2$PSuc,input$refrigerant2)
     calcMF2$H2 = mapply(refprope,'H','T',(calcMF2$T3_Q0 - input$sc2),'P',calcMF2$PDis,input$refrigerant2)
-    comparisonDF2A$CalcMF2 <- comparisonDF2A$CAP2 / (calcMF2$H1 - calcMF2$H2)
+    comparisonDF2A$CalcMF_Mod2 <- comparisonDF2A$CAP_Mod2 / (calcMF2$H1 - calcMF2$H2)
     #calcs isen effy
     isenTemp2 <- data.frame(PSuc = numeric(length(comparisonDF2A$Evap)))
     isenTemp2$PSuc = mapply(refprope,'P','T',comparisonDF2A$Evap,'Q',1,input$refrigerant2)
@@ -1271,31 +1340,35 @@ server <- function(input, output, session) {
     isenTemp2$ReturnGasH = mapply(refprope,'H','T',(comparisonDF2A$Evap + input$sh2),'P',isenTemp2$PSuc,input$refrigerant2)
     isenTemp2$Inlet_Entropy = mapply(refprope,'S','T',(comparisonDF2A$Evap + input$sh2),'P',isenTemp2$PSuc,input$refrigerant2)
     isenTemp2$DischargeGasIdealH = mapply(refprope,'H','P',isenTemp2$PDis,'S',isenTemp2$Inlet_Entropy,input$refrigerant2)
-    isenTemp2$EER <- comparisonDF2A$CAP2 / comparisonDF2A$POW2
+    isenTemp2$EER <- comparisonDF2A$CAP_Mod2 / comparisonDF2A$POW_Mod2
     isenTemp2$TEER <- (isenTemp2$ReturnGasH - isenTemp2$SubcoolLiqH)/(isenTemp2$DischargeGasIdealH - isenTemp2$ReturnGasH) * 3.412
     isenTemp2$isenEffy <- isenTemp2$EER / isenTemp2$TEER
-    comparisonDF2A$IsenEffy2 <- isenTemp2$isenEffy
+    comparisonDF2A$IsenEffy_Mod2 <- isenTemp2$isenEffy
     #calcs vol effy
     volTemp2 <- data.frame(Evap = comparisonDF2A$Evap)
     volTemp2$PSuc <- mapply(refprope,'P','T',volTemp2$Evap,'Q',1,input$refrigerant2)
     volTemp2$Density <- mapply(refprope, 'D', 'T', volTemp2$Evap+input$sh2, 'P', volTemp2$PSuc,input$refrigerant2)  
     volTemp2$Density <- volTemp2$Density * 1728 #conversion to lbm/ft3
-    volTemp2$mf <- comparisonDF2A$MeasMF2
+    volTemp2$mf <- comparisonDF2A$MeasMF_Mod2
     volTemp2$volEffy <- volTemp2$mf / (volTemp2$Density * input$displacement2 * 3500 * 0.034722)
-    comparisonDF2A$VolEffy2 <- volTemp2$volEffy
+    comparisonDF2A$VolEffy_Mod2 <- volTemp2$volEffy
     #calcualate %difference columns
-    comparisonDF2A$Error_CAP <- (comparisonDF2A$CAP1 - comparisonDF2A$CAP2) / comparisonDF2A$CAP1 * 100
-    comparisonDF2A$Error_POW <- (comparisonDF2A$POW1 - comparisonDF2A$POW2) / comparisonDF2A$POW1 * 100
-    comparisonDF2A$Error_EER <- (comparisonDF2A$EER1 - comparisonDF2A$EER2) / comparisonDF2A$EER1 * 100
-    comparisonDF2A$Error_CURR <- (comparisonDF2A$CURR1 - comparisonDF2A$CURR2) / comparisonDF2A$CURR1 * 100
-    comparisonDF2A$Error_MMF <- (comparisonDF2A$MeasMF1 - comparisonDF2A$MeasMF2) / comparisonDF2A$MeasMF1 * 100
-    comparisonDF2A$Error_CMF <- (comparisonDF2A$CalcMF1 - comparisonDF2A$CalcMF2) / comparisonDF2A$CalcMF1 * 100
-    comparisonDF2A$Error_IsenEffy <- (comparisonDF2A$IsenEffy1 - comparisonDF2A$IsenEffy2) / comparisonDF2A$IsenEffy1 * 100
-    comparisonDF2A$Error_VolEffy <- (comparisonDF2A$VolEffy1 - comparisonDF2A$VolEffy2) / comparisonDF2A$VolEffy1 * 100
+    comparisonDF2A$Error_CAP <- (comparisonDF2A$CAP_Mod1 - comparisonDF2A$CAP_Mod2) / comparisonDF2A$CAP_Mod1 * 100
+    comparisonDF2A$Error_POW <- (comparisonDF2A$POW_Mod1 - comparisonDF2A$POW_Mod2) / comparisonDF2A$POW_Mod1 * 100
+    comparisonDF2A$Error_EER <- (comparisonDF2A$EER_Mod1 - comparisonDF2A$EER_Mod2) / comparisonDF2A$EER_Mod1 * 100
+    comparisonDF2A$Error_CURR <- (comparisonDF2A$CURR_Mod1 - comparisonDF2A$CURR_Mod2) / comparisonDF2A$CURR_Mod1 * 100
+    comparisonDF2A$Error_MMF <- (comparisonDF2A$MeasMF_Mod1 - comparisonDF2A$MeasMF_Mod2) / comparisonDF2A$MeasMF_Mod1 * 100
+    comparisonDF2A$Error_CMF <- (comparisonDF2A$CalcMF_Mod1 - comparisonDF2A$CalcMF_Mod2) / comparisonDF2A$CalcMF_Mod1 * 100
+    comparisonDF2A$Error_IsenEffy <- (comparisonDF2A$IsenEffy_Mod1 - comparisonDF2A$IsenEffy_Mod2) / comparisonDF2A$IsenEffy_Mod1 * 100
+    comparisonDF2A$Error_VolEffy <- (comparisonDF2A$VolEffy_Mod1 - comparisonDF2A$VolEffy_Mod2) / comparisonDF2A$VolEffy_Mod1 * 100
     
     comparisonDF2A <- round(comparisonDF2A[,c(1,2,3,11,19,4,12,20,5,13,21,6,14,22,7,15,23,8,16,24,9,17,25,10,18,26)],2)
     
     output$compareTable2A = renderFormattable({
+      
+      names(comparisonDF2A) <- gsub(x = names(comparisonDF2A), pattern = "Mod1", replacement = input$model1Name)  
+      names(comparisonDF2A) <- gsub(x = names(comparisonDF2A), pattern = "Mod2", replacement = input$model2Name)
+      
       formattable(comparisonDF2A, list(
         'Evap' = formatter("span", style = x ~ style("font-weight" = "bold")),
         'Cond' = formatter("span", style = x ~ style("font-weight" = "bold")),
@@ -1633,20 +1706,20 @@ server <- function(input, output, session) {
                                  Cond = condTest)
     
     #####first set of coefficients
-    comparisonDF2B$CAP1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CAP[1],
+    comparisonDF2B$CAP_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CAP[1],
                                   RV3$pastedCoeffs2B$CAP[2],RV3$pastedCoeffs2B$CAP[3],RV3$pastedCoeffs2B$CAP[4],
                                   RV3$pastedCoeffs2B$CAP[5],RV3$pastedCoeffs2B$CAP[6],RV3$pastedCoeffs2B$CAP[7],
                                   RV3$pastedCoeffs2B$CAP[8],RV3$pastedCoeffs2B$CAP[9],RV3$pastedCoeffs2B$CAP[10])
-    comparisonDF2B$POW1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$POW[1],
+    comparisonDF2B$POW_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$POW[1],
                                   RV3$pastedCoeffs2B$POW[2],RV3$pastedCoeffs2B$POW[3],RV3$pastedCoeffs2B$POW[4],
                                   RV3$pastedCoeffs2B$POW[5],RV3$pastedCoeffs2B$POW[6],RV3$pastedCoeffs2B$POW[7],
                                   RV3$pastedCoeffs2B$POW[8],RV3$pastedCoeffs2B$POW[9],RV3$pastedCoeffs2B$POW[10])
-    comparisonDF2B$EER1 <- comparisonDF2B$CAP1 / comparisonDF2B$POW1
-    comparisonDF2B$CURR1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CURR[1],
+    comparisonDF2B$EER_Mod1 <- comparisonDF2B$CAP_Mod1 / comparisonDF2B$POW_Mod1
+    comparisonDF2B$CURR_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CURR[1],
                                    RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
                                    RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
                                    RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
-    comparisonDF2B$MeasMF1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MeasMF[1],
+    comparisonDF2B$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MeasMF[1],
                                      RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
                                      RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
                                      RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
@@ -1657,7 +1730,7 @@ server <- function(input, output, session) {
     calcMF3$T3_Q0 = mapply(refprope,'T','P',calcMF3$PDis,'Q',0,input$refrigerant2)
     calcMF3$H1 = mapply(refprope,'H','T',(comparisonDF2B$Evap + input$sh2),'P',calcMF3$PSuc,input$refrigerant2)
     calcMF3$H2 = mapply(refprope,'H','T',(calcMF3$T3_Q0 - input$sc2),'P',calcMF3$PDis,input$refrigerant2)
-    comparisonDF2B$CalcMF1 <- comparisonDF2B$CAP1 / (calcMF3$H1 - calcMF3$H2)
+    comparisonDF2B$CalcMF_Mod1 <- comparisonDF2B$CAP_Mod1 / (calcMF3$H1 - calcMF3$H2)
     #calcs isen effy
     isenTemp3 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     isenTemp3$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1667,34 +1740,34 @@ server <- function(input, output, session) {
     isenTemp3$ReturnGasH = mapply(refprope,'H','T',(comparisonDF2B$Evap + input$sh2),'P',isenTemp3$PSuc,input$refrigerant2)
     isenTemp3$Inlet_Entropy = mapply(refprope,'S','T',(comparisonDF2B$Evap + input$sh2),'P',isenTemp3$PSuc,input$refrigerant2)
     isenTemp3$DischargeGasIdealH = mapply(refprope,'H','P',isenTemp3$PDis,'S',isenTemp3$Inlet_Entropy,input$refrigerant2)
-    isenTemp3$EER <- comparisonDF2B$CAP1 / comparisonDF2B$POW1
+    isenTemp3$EER <- comparisonDF2B$CAP_Mod1 / comparisonDF2B$POW_Mod1
     isenTemp3$TEER <- (isenTemp3$ReturnGasH - isenTemp3$SubcoolLiqH)/(isenTemp3$DischargeGasIdealH - isenTemp3$ReturnGasH) * 3.412
     isenTemp3$isenEffy <- isenTemp3$EER / isenTemp3$TEER
-    comparisonDF2B$IsenEffy1 <- isenTemp3$isenEffy
+    comparisonDF2B$IsenEffy_Mod1 <- isenTemp3$isenEffy
     #calcs vol effy
     volTemp3 <- data.frame(Evap = comparisonDF2B$Evap)
     volTemp3$PSuc <- mapply(refprope,'P','T',volTemp3$Evap,'Q',1,input$refrigerant2)
     volTemp3$Density <- mapply(refprope, 'D', 'T', volTemp3$Evap+input$sh2, 'P', volTemp3$PSuc,input$refrigerant2)  
     volTemp3$Density <- volTemp3$Density * 1728 #conversion to lbm/ft3
-    volTemp3$mf <- comparisonDF2B$MeasMF1
+    volTemp3$mf <- comparisonDF2B$MeasMF_Mod1
     volTemp3$volEffy <- volTemp3$mf / (volTemp3$Density * input$displacement2 * 3500 * 0.034722)
-    comparisonDF2B$VolEffy1 <- volTemp3$volEffy
+    comparisonDF2B$VolEffy_Mod1 <- volTemp3$volEffy
     
     ##### second set, created from uploaded test data
-    comparisonDF2B$CAP2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CAP[1],
+    comparisonDF2B$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CAP[1],
                                   newCoef2B$CAP[2],newCoef2B$CAP[3],newCoef2B$CAP[4],
                                   newCoef2B$CAP[5],newCoef2B$CAP[6],newCoef2B$CAP[7],
                                   newCoef2B$CAP[8],newCoef2B$CAP[9],newCoef2B$CAP[10])
-    comparisonDF2B$POW2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$POW[1],
+    comparisonDF2B$POW_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$POW[1],
                                   newCoef2B$POW[2],newCoef2B$POW[3],newCoef2B$POW[4],
                                   newCoef2B$POW[5],newCoef2B$POW[6],newCoef2B$POW[7],
                                   newCoef2B$POW[8],newCoef2B$POW[9],newCoef2B$POW[10])
-    comparisonDF2B$EER2 <- comparisonDF2B$CAP2 / comparisonDF2B$POW2
-    comparisonDF2B$CURR2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CURR[1],
+    comparisonDF2B$EER_Mod2 <- comparisonDF2B$CAP_Mod2 / comparisonDF2B$POW_Mod2
+    comparisonDF2B$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CURR[1],
                                    newCoef2B$CURR[2],newCoef2B$CURR[3],newCoef2B$CURR[4],
                                    newCoef2B$CURR[5],newCoef2B$CURR[6],newCoef2B$CURR[7],
                                    newCoef2B$CURR[8],newCoef2B$CURR[9],newCoef2B$CURR[10])
-    comparisonDF2B$MeasMF2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$MeasMF[1],
+    comparisonDF2B$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$MeasMF[1],
                                      newCoef2B$MeasMF[2],newCoef2B$MeasMF[3],newCoef2B$MeasMF[4],
                                      newCoef2B$MeasMF[5],newCoef2B$MeasMF[6],newCoef2B$MeasMF[7],
                                      newCoef2B$MeasMF[8],newCoef2B$MeasMF[9],newCoef2B$MeasMF[10])
@@ -1706,7 +1779,7 @@ server <- function(input, output, session) {
     calcMF4$T3_Q0 = mapply(refprope,'T','P',calcMF4$PDis,'Q',0,input$refrigerant2)
     calcMF4$H1 = mapply(refprope,'H','T',(comparisonDF2B$Evap + input$sh2),'P',calcMF4$PSuc,input$refrigerant2)
     calcMF4$H2 = mapply(refprope,'H','T',(calcMF4$T3_Q0 - input$sc2),'P',calcMF4$PDis,input$refrigerant2)
-    comparisonDF2B$CalcMF2 <- comparisonDF2B$CAP2 / (calcMF4$H1 - calcMF4$H2)
+    comparisonDF2B$CalcMF_Mod2 <- comparisonDF2B$CAP_Mod2 / (calcMF4$H1 - calcMF4$H2)
     #calcs isen effy
     isenTemp4 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     isenTemp4$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1716,27 +1789,27 @@ server <- function(input, output, session) {
     isenTemp4$ReturnGasH = mapply(refprope,'H','T',(comparisonDF2B$Evap + input$sh2),'P',isenTemp4$PSuc,input$refrigerant2)
     isenTemp4$Inlet_Entropy = mapply(refprope,'S','T',(comparisonDF2B$Evap + input$sh2),'P',isenTemp4$PSuc,input$refrigerant2)
     isenTemp4$DischargeGasIdealH = mapply(refprope,'H','P',isenTemp4$PDis,'S',isenTemp4$Inlet_Entropy,input$refrigerant2)
-    isenTemp4$EER <- comparisonDF2B$CAP2 / comparisonDF2B$POW2
+    isenTemp4$EER <- comparisonDF2B$CAP_Mod2 / comparisonDF2B$POW_Mod2
     isenTemp4$TEER <- (isenTemp4$ReturnGasH - isenTemp4$SubcoolLiqH)/(isenTemp4$DischargeGasIdealH - isenTemp4$ReturnGasH) * 3.412
     isenTemp4$isenEffy <- isenTemp4$EER / isenTemp4$TEER
-    comparisonDF2B$IsenEffy2 <- isenTemp4$isenEffy
+    comparisonDF2B$IsenEffy_Mod2 <- isenTemp4$isenEffy
     #calcs vol effy
     volTemp4 <- data.frame(Evap = comparisonDF2B$Evap)
     volTemp4$PSuc <- mapply(refprope,'P','T',volTemp4$Evap,'Q',1,input$refrigerant2)
     volTemp4$Density <- mapply(refprope, 'D', 'T', volTemp4$Evap+input$sh2, 'P', volTemp4$PSuc,input$refrigerant2)  
     volTemp4$Density <- volTemp4$Density * 1728 #conversion to lbm/ft3
-    volTemp4$mf <- comparisonDF2B$MeasMF2
+    volTemp4$mf <- comparisonDF2B$MeasMF_Mod2
     volTemp4$volEffy <- volTemp4$mf / (volTemp4$Density * input$displacement2 * 3500 * 0.034722)
-    comparisonDF2B$VolEffy2 <- volTemp4$volEffy
+    comparisonDF2B$VolEffy_Mod2 <- volTemp4$volEffy
     #calcualate %difference columns
-    comparisonDF2B$Error_CAP <- (comparisonDF2B$CAP1 - comparisonDF2B$CAP2) / comparisonDF2B$CAP1 * 100
-    comparisonDF2B$Error_POW <- (comparisonDF2B$POW1 - comparisonDF2B$POW2) / comparisonDF2B$POW1 * 100
-    comparisonDF2B$Error_EER <- (comparisonDF2B$EER1 - comparisonDF2B$EER2) / comparisonDF2B$EER1 * 100
-    comparisonDF2B$Error_CURR <- (comparisonDF2B$CURR1 - comparisonDF2B$CURR2) / comparisonDF2B$CURR1 * 100
-    comparisonDF2B$Error_MMF <- (comparisonDF2B$MeasMF1 - comparisonDF2B$MeasMF2) / comparisonDF2B$MeasMF1 * 100
-    comparisonDF2B$Error_CMF <- (comparisonDF2B$CalcMF1 - comparisonDF2B$CalcMF2) / comparisonDF2B$CalcMF1 * 100
-    comparisonDF2B$Error_IsenEffy <- (comparisonDF2B$IsenEffy1 - comparisonDF2B$IsenEffy2) / comparisonDF2B$IsenEffy1 * 100
-    comparisonDF2B$Error_VolEffy <- (comparisonDF2B$VolEffy1 - comparisonDF2B$VolEffy2) / comparisonDF2B$VolEffy1 * 100
+    comparisonDF2B$Error_CAP <- (comparisonDF2B$CAP_Mod1 - comparisonDF2B$CAP_Mod2) / comparisonDF2B$CAP_Mod1 * 100
+    comparisonDF2B$Error_POW <- (comparisonDF2B$POW_Mod1 - comparisonDF2B$POW_Mod2) / comparisonDF2B$POW_Mod1 * 100
+    comparisonDF2B$Error_EER <- (comparisonDF2B$EER_Mod1 - comparisonDF2B$EER_Mod2) / comparisonDF2B$EER_Mod1 * 100
+    comparisonDF2B$Error_CURR <- (comparisonDF2B$CURR_Mod11 - comparisonDF2B$CURR_Mod2) / comparisonDF2B$CURR_Mod1 * 100
+    comparisonDF2B$Error_MMF <- (comparisonDF2B$MeasMF_Mod1 - comparisonDF2B$MeasMF_Mod2) / comparisonDF2B$MeasMF_Mod1 * 100
+    comparisonDF2B$Error_CMF <- (comparisonDF2B$CalcMF_Mod1 - comparisonDF2B$CalcMF_Mod2) / comparisonDF2B$CalcMF_Mod1 * 100
+    comparisonDF2B$Error_IsenEffy <- (comparisonDF2B$IsenEffy_Mod1 - comparisonDF2B$IsenEffy_Mod2) / comparisonDF2B$IsenEffy_Mod1 * 100
+    comparisonDF2B$Error_VolEffy <- (comparisonDF2B$VolEffy_Mod1 - comparisonDF2B$VolEffy_Mod2) / comparisonDF2B$VolEffy_Mod1 * 100
     
     comparisonDF2B <- round(comparisonDF2B[,c(1,2,3,11,19,4,12,20,5,13,21,6,14,22,7,15,23,8,16,24,9,17,25,10,18,26)],2)
     
