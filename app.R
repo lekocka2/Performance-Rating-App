@@ -23,6 +23,7 @@ library(formattable)
 library(knitr)
 library(datapasta)
 library(jsonlite)
+library(sp)
 
 source("functions.R")
 
@@ -130,7 +131,7 @@ ui <- fluidPage(
                                             textInput("refrigerant", "Refrigerant", value="R410A.mix", width='115px'),
                                             numericInput("sh", "Superheat", value=20, width='115px'),
                                             numericInput("sc", "Subcooling", value=15, width='115px'),
-                                            numericInput("displacement", "Displacement", value=NULL, width='115px'),
+                                            numericInput("displacement", "Displacement", value=1.54, width='115px'),
                                             style='padding-left:20px; padding-right:0px'
                                      )
                                    )
@@ -160,8 +161,10 @@ ui <- fluidPage(
                                                   actionButton("reset", "Reset"),br(),
                                                   "Revert working set of coefs back to the original pasted values by pressing this button at any time.",br(),br(),
                                                   
-                                                  numericInput("numPtsAdded", "Add Test Points", value=0, width='115px'),
-                                                  conditionalPanel(condition = "input.numPtsAdded > '0'",
+                                                  #ADD TEST PTS
+                                                  # numericInput("numPtsAdded", "Add Test Points", value=0, width='115px'),
+                                                  checkboxInput("yesAdd", "Add Test Points", value=FALSE),
+                                                  conditionalPanel(condition = "input.yesAdd == 1",
                                                                    rHandsontableOutput("addPts"),br(),
                                                                    tags$head(
                                                                      tags$style(HTML('#save{background-color:#FFD700}'))
@@ -296,7 +299,7 @@ ui <- fluidPage(
                                          style='padding-left:0px'
                                   ),
                                   column(1,
-                                         numericInput("displacement2", "Displacement", value=NULL,width='150px'),
+                                         numericInput("displacement2", "Displacement", value=1.54,width='150px'),
                                          style='padding-left:0px'
                                   ),
                                   column(6,
@@ -342,17 +345,17 @@ ui <- fluidPage(
                                                           fluidRow(
                                                             
                                                             column(6,
-                                                                   div(plotOutput("capDifPlot2A"), style="margin-bottom:50px"),
-                                                                   div(plotOutput("currDifPlot2A"), style="margin-bottom:50px"),
-                                                                   div(plotOutput("MeasMFDifPlot2A"), style="margin-bottom:50px"),
-                                                                   div(plotOutput("isenEffyPlot2A"), style="margin-bottom:50px"),
+                                                                   div(plotOutput("capDifPlot2A"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("currDifPlot2A"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("MeasMFDifPlot2A"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("isenEffyPlot2A"), style="margin-bottom:160px"),
                                                                    style='padding-left:0px;'
                                                             ),
                                                             column(6,
-                                                                   div(plotOutput("powDifPlot2A"), style="margin-left:300px; margin-bottom:50px"),
-                                                                   div(plotOutput("EERDifPlot2A"), style="margin-left:300px; margin-bottom:50px"),
-                                                                   div(plotOutput("CalcMFDifPlot2A"), style="margin-left:300px; margin-bottom:50px"),
-                                                                   div(plotOutput("volEffyPlot2A"), style="margin-left:300px; margin-bottom:50px"),
+                                                                   div(plotOutput("powDifPlot2A"), style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("EERDifPlot2A"), style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("CalcMFDifPlot2A"), style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("volEffyPlot2A"), style="margin-left:300px; margin-bottom:160px"),
                                                                    style='padding-right:0px;'
                                                             ))),
                                          #if table is selected, show table
@@ -389,17 +392,17 @@ ui <- fluidPage(
                                          conditionalPanel(condition = "input.show2 == 'plots2'",
                                                     fluidRow(
                                                       column(6,
-                                                             div(plotOutput("capDifPlot2B"), style="margin-bottom:50px"),
-                                                             div(plotOutput("currDifPlot2B"), style="margin-bottom:50px"),
-                                                             div(plotOutput("MeasMFDifPlot2B"), style="margin-bottom:50px"),
-                                                             div(plotOutput("isenEffyPlot2B"), style="margin-bottom:50px"),
+                                                             div(plotOutput("capDifPlot2B"), style="margin-bottom:160px"),
+                                                             div(plotOutput("currDifPlot2B"), style="margin-bottom:160px"),
+                                                             div(plotOutput("MeasMFDifPlot2B"), style="margin-bottom:160px"),
+                                                             div(plotOutput("isenEffyPlot2B"), style="margin-bottom:160px"),
                                                              style='padding-left:0px;'
                                                       ),
                                                       column(6,
-                                                             div(plotOutput("powDifPlot2B"),style="margin-left:300px; margin-bottom:50px"),
-                                                             div(plotOutput("EERDifPlot2B"),style="margin-left:300px; margin-bottom:50px"),
-                                                             div(plotOutput("CalcMFDifPlot2B"),style="margin-left:300px; margin-bottom:50px"),
-                                                             div(plotOutput("volEffyPlot2B"),style="margin-left:300px; margin-bottom:50px"),
+                                                             div(plotOutput("powDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                             div(plotOutput("EERDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                             div(plotOutput("CalcMFDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                             div(plotOutput("volEffyPlot2B"),style="margin-left:300px; margin-bottom:160px"),
                                                              style='padding-right:0px;'
                                                       ))),
                                          #if table is selected, show table
@@ -427,10 +430,9 @@ server <- function(input, output, session) {
     #coefficients table output
     pasted1A <- readClipboard()
     pasted1A <- as.numeric(unlist((strsplit(pasted1A, split = "\t"))))
-    originalPasted <- pasted1A
+   
     #reset button
     observeEvent(input$reset, {
-      RV$pasted1A <- originalPasted
       
       RV$pastedCoeffs1 <- data.frame(CAP = pasted1A[1:10],
                                      POW = pasted1A[11:20],
@@ -456,125 +458,94 @@ server <- function(input, output, session) {
     })
     
     #Replace** additional test points
-    observe({
-      req(input$numPtsAdded)
-      if(input$numPtsAdded > 0){
-        Evap <- rep("",input$numPtsAdded)
-        Cond <- rep("",input$numPtsAdded)
-        Cap <- rep("",input$numPtsAdded)
-        Pow <- rep("",input$numPtsAdded)
-        Curr <- rep("",input$numPtsAdded)
-        MF <- rep("",input$numPtsAdded)
-        RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
-      }
-    })
+    observeEvent(input$yesAdd, {
+      Evap <- ""
+      Cond <- ""
+      Cap <- ""
+      Pow <- ""
+      Curr <- ""
+      MF <- ""
+      RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
+    }) #end observe event
     
-    data <- reactive({
+    rea <- reactive({
       hot <- input$addPts
       if (!is.null(hot)) as.data.frame(hot_to_r(hot))
     })
-    
-    
     
     output$addPts <- renderRHandsontable({
       rhandsontable(RV$data.in)
     })
     
     #recalculate coefficients based on additional test points
-    observeEvent(input$save, { 
-      hotDF <- data()
+    evapPlot <- seq(-10,60,5)
+    condPlot <- seq(75,150,5)
+    numTotal1AA <- length(evapPlot)*length(condPlot)
+    
+    rval <- reactiveValues(df = data.frame(evap = numeric(numTotal1AA),
+                                           cond = numeric(numTotal1AA)) %>%
+                             mutate(evap = rep_len(evapPlot, numTotal1AA),
+                                    cond = rep_len(condPlot, numTotal1AA)))
+    
+    
+    rval$df$Capacity <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CAP[1],
+                               RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
+                               RV$pastedCoeffs1$CAP[5],RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],
+                               RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
+    rval$df$Power <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$POW[1],
+                            RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],
+                            RV$pastedCoeffs1$POW[5],RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],
+                            RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
+    rval$df$Current <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CURR[1],
+                              RV$pastedCoeffs1$CURR[2],RV$pastedCoeffs1$CURR[3],RV$pastedCoeffs1$CURR[4],
+                              RV$pastedCoeffs1$CURR[5],RV$pastedCoeffs1$CURR[6],RV$pastedCoeffs1$CURR[7],
+                              RV$pastedCoeffs1$CURR[8],RV$pastedCoeffs1$CURR[9],RV$pastedCoeffs1$CURR[10])
+    rval$df$MeasMF <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$MF[1],
+                             RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
+                             RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
+                             RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
+    
+    # print(rval$df)
+    
+    observeEvent(input$save, {
       
-      #create plot values
-      # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-      # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
-      # numTotal1AA <- length(evapPlot)*length(condPlot)
-      # 
-      # addingDF <- data.frame(evap = numeric(numTotal1AA),
-      #                        cond = numeric(numTotal1AA)) %>%
-      #   mutate(evap = rep_len(evapPlot, numTotal1AA),
-      #          cond = rep_len(condPlot, numTotal1AA))
-      
-      evapPlot <- seq(-10,60,5)
-      condPlot <- seq(80,150,10)
-      numTotal1AA <- length(evapPlot)*length(condPlot)
-
-      addingDF <- data.frame(evap = numeric(numTotal1AA),
-                             cond = numeric(numTotal1AA)) %>%
-        mutate(evap = rep_len(evapPlot, numTotal1AA),
-               cond = rep_len(condPlot, numTotal1AA))
-      
-      
-      addingDF$Capacity <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$CAP[1],
-                                  RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
-                                  RV$pastedCoeffs1$CAP[5],RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],
-                                  RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
-      addingDF$Power <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$POW[1],
-                               RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],
-                               RV$pastedCoeffs1$POW[5],RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],
-                               RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
-      addingDF$Current <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$CURR[1],
-                                 RV$pastedCoeffs1$CURR[2],RV$pastedCoeffs1$CURR[3],RV$pastedCoeffs1$CURR[4],
-                                 RV$pastedCoeffs1$CURR[5],RV$pastedCoeffs1$CURR[6],RV$pastedCoeffs1$CURR[7],
-                                 RV$pastedCoeffs1$CURR[8],RV$pastedCoeffs1$CURR[9],RV$pastedCoeffs1$CURR[10])
-      addingDF$MeasMF <- mapply(perfCoeff,addingDF$evap,addingDF$cond,RV$pastedCoeffs1$MF[1],
-                                RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
-                                RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
-                                RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
-      
+      test <- rval$df
+      test[nrow(test)+1,] <- NA
       ###below is using data from handsontable inputs
-      evaps <- as.numeric(isolate(hotDF[,1]))
-      conds <- as.numeric(isolate(hotDF[,2]))
-      print(evaps)
-      #get indices of extisting conditions that need replaced
-      # evapIndx <- c()
-      # for(i in input$numPtsAdded){
-      #   plc <- unlist(sapply(addingDF$evap, function(y) match(y,evaps[i])))
-      #   evapIndx[[i]] <- plc
-      # }
-      # realIndE <- which(evapIndx == 1)
-      # print(realIndE)
-      # 
-      # for(i in input$numPtsAdded){
-      #   condIndx <- unlist(sapply(addingDF$cond, function(y) match(y,conds[i])))
-      # }
-      # realIndC <- which(condIndx == 1)
-      # print(realIndC)
-      # 
-      # indices <- Reduce(intersect, list(realIndE, realIndC))
+      evaps <- as.numeric(isolate(rea()[,1]))
+      conds <- as.numeric(isolate(rea()[,2]))
+      # get indices of extisting conditions that need replaced
+      plc1 <- unlist(sapply(test$evap, function(y) match(y,evaps)))
+      index1 <- which(plc1 == 1)
       
+      plc2 <- unlist(sapply(test$cond, function(y) match(y,conds)))
+      index2 <- which(plc2 == 1)
       
-      plc <- c()
-      lis <- c()
-      
-      for(i in 1:length(evaps)){
-        v <- c(evaps[i],conds[i]) 
-        plc <- which(Vectorize(function(x) x %in% v)(addingDF), arr.ind=TRUE)
-        lis[i] <- plc
+      #find the duplicates 
+      if(length(index1) != 0 & length(index2) != 0){
+        indexRem <- Reduce(intersect, list(index1, index2))
+        print(indexRem)
+        #remove the duplicates
+        test <- test[-c(indexRem),]
       }
       
-      print(plc)
-      print(lis)
+      #add in new test points at bottom of df
+      test$evap[nrow(test)] <- as.numeric(isolate(rea()[,1]))
+      test$cond[nrow(test)] <- as.numeric(isolate(rea()[,2]))
+      test$Capacity[nrow(test)] <- as.numeric(isolate(rea()[,3]))
+      test$Power[nrow(test)] <- as.numeric(isolate(rea()[,4]))
+      test$Current[nrow(test)] <- as.numeric(isolate(rea()[,5]))
+      test$MeasMF[nrow(test)] <- as.numeric(isolate(rea()[,6]))
       
-      
-      ##
-      frame <- addingDF[-c(indices),]
-      print(frame)
-      
-      #add in extra test points at bottom of df
-      el1 <- as.numeric(append(frame$evap, hotDF$Evap))
-      el2 <- as.numeric(append(frame$cond, hotDF$Cond))
-      el3 <- as.numeric(append(frame$Capacity, hotDF$Cap))
-      el4 <- as.numeric(append(frame$Power, hotDF$Pow))
-      el5 <- as.numeric(append(frame$Current, hotDF$Curr))
-      el6 <- as.numeric(append(frame$MeasMF, hotDF$MF))
-      print(el6)
       #make coefficients with lm
-      RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(el1, el2, el3)
-      RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(el1, el2, el4)
-      RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(el1, el2, el5)
-      RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(el1, el2, el6)
+      RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(test$evap, test$cond, test$Capacity)
+      RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(test$evap, test$cond, test$Power)
+      RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(test$evap, test$cond, test$Current)
+      RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(test$evap, test$cond,  test$MeasMF)
       
       RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,8)
+      rval$df <- test 
+      
     })
     
     #calculate curve % shift
@@ -599,8 +570,6 @@ server <- function(input, output, session) {
   #adjust coeffs using inputs
   observeEvent(input$adjust, {
     #create plot values
-    # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-    # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
     evapPlot <- seq(-10,60,5)
     condPlot <- seq(80,150,10)
     numTotal1A <- length(evapPlot)*length(condPlot)
@@ -810,7 +779,6 @@ server <- function(input, output, session) {
         geom_hline(yintercept = 0) + geom_vline(xintercept = 0)
     }, height = 540, width = 740) #end output
     
-    
   })#end observe event
   
   
@@ -884,7 +852,6 @@ server <- function(input, output, session) {
     
   }) #end observe event, upload
   
-  
   #option to shift curves up or down by %
   observeEvent(input$calculate, {
     
@@ -946,8 +913,6 @@ server <- function(input, output, session) {
     RVChoice1B$newCoef1B <- coefAdjust
     
     #create plot values
-    # evapPlot <- seq(input$minEvap,input$maxEvap,input$incEvap)
-    # condPlot <- seq(input$minCond,input$maxCond,input$incCond)
     evapPlot <- seq(-10,60,5)
     condPlot <- seq(80,150,10)
     numTotal <- as.numeric(length(evapPlot)*length(condPlot))
@@ -1152,7 +1117,6 @@ server <- function(input, output, session) {
   }) #end observe event, calculate button
   
   
-  
   ########################################################################################
   #tab 2
   ########################################################################################
@@ -1213,10 +1177,7 @@ server <- function(input, output, session) {
       evapEnv <- c(-10,-10,40,55,55)
       condEnv <- c(80,100,145,145,80)
     }
-    # if(input$envel == 'twostage'){
-    #   evapEnv <- c(-10,-10,40,55,55)
-    #   condEnv <- c(80,100,145,145,80)
-    # }
+
     #the below uses the envelope_builder function of the refprop package
     Boundary = as.data.frame(cbind(evapEnv, condEnv))
     Test_Data = Envelope_Builder(Boundary, 10)
@@ -1371,7 +1332,7 @@ server <- function(input, output, session) {
                                     style = x ~ style(color = ifelse(x < 0, "red", "green")),
                                     x ~ icontext(ifelse(x>0, "arrow-up", "arrow-down")))
         
-      ), extensions = c('FixedHeader'), #fixedheader extension is ignored here :(
+      ), 
       caption = "Error columns calculated by equation (Model1_Value - Model2_Value) / Model1_Value * 100", 
       options=list(paging=F))
     }) #end output
@@ -1640,6 +1601,7 @@ server <- function(input, output, session) {
     newCoef2B$POW <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Power)
     newCoef2B$CURR <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Current)
     newCoef2B$MeasMF <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$MeasMassFlow)
+    newCoef2B <- round(newCoef2B, 10)
     
     output$createCoeffs2B = renderDataTable({
       datatable(newCoef2B, rownames=F, selection='none',filter='none', 
