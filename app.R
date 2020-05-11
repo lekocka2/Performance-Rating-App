@@ -3,26 +3,15 @@
 #
 
 library(rsconnect)
-library(utils)
 library(shiny)
-library(shinydashboard)
 library(tidyverse)
 library(ggplot2)
-library(reshape2)
-library(pracma)
 library(readr) 
-library(lubridate)
-library(zoo)    
-library(shinycssloaders) 
-library(devtools)
+library(pracma)
 library(rhandsontable)
-library(clipr)
 library(EmersonDataScience)
 library(DT)
 library(formattable)
-library(knitr)
-library(datapasta)
-library(jsonlite)
 library(sp)
 
 source("functions.R")
@@ -1652,7 +1641,7 @@ server <- function(input, output, session) {
                                  MeasMF = pasted2B[31:40])
     
     RV3$pastedCoeffs2B <- pastedCoeffs2B
-    
+
     output$table2B = renderDataTable({
       datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
@@ -1663,7 +1652,6 @@ server <- function(input, output, session) {
   observeEvent(input$upload2B, {
     req(input$upload2B)
     uploadDF2B <- read_csv(input$upload2B$datapath)
-    
     #create coefficients
     newCoef2B <- data.frame(CAP = numeric(10),
                             POW = numeric(10),
@@ -1805,7 +1793,7 @@ server <- function(input, output, session) {
     comparisonDF2B$Error_CAP <- (comparisonDF2B$CAP_Mod1 - comparisonDF2B$CAP_Mod2) / comparisonDF2B$CAP_Mod1 * 100
     comparisonDF2B$Error_POW <- (comparisonDF2B$POW_Mod1 - comparisonDF2B$POW_Mod2) / comparisonDF2B$POW_Mod1 * 100
     comparisonDF2B$Error_EER <- (comparisonDF2B$EER_Mod1 - comparisonDF2B$EER_Mod2) / comparisonDF2B$EER_Mod1 * 100
-    comparisonDF2B$Error_CURR <- (comparisonDF2B$CURR_Mod11 - comparisonDF2B$CURR_Mod2) / comparisonDF2B$CURR_Mod1 * 100
+    comparisonDF2B$Error_CURR <- (comparisonDF2B$CURR_Mod1 - comparisonDF2B$CURR_Mod2) / comparisonDF2B$CURR_Mod1 * 100
     comparisonDF2B$Error_MMF <- (comparisonDF2B$MeasMF_Mod1 - comparisonDF2B$MeasMF_Mod2) / comparisonDF2B$MeasMF_Mod1 * 100
     comparisonDF2B$Error_CMF <- (comparisonDF2B$CalcMF_Mod1 - comparisonDF2B$CalcMF_Mod2) / comparisonDF2B$CalcMF_Mod1 * 100
     comparisonDF2B$Error_IsenEffy <- (comparisonDF2B$IsenEffy_Mod1 - comparisonDF2B$IsenEffy_Mod2) / comparisonDF2B$IsenEffy_Mod1 * 100
@@ -2080,6 +2068,10 @@ server <- function(input, output, session) {
     
   })
   
+#   session$onSessionEnded(function() {
+#   stopApp()
+#   q("no")
+# })
   
 }#end server
 ####################################################
