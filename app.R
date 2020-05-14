@@ -2,7 +2,6 @@
 #  App created by Logan Kocka   19 Feb 2020
 #
 
-library(rsconnect)
 library(shiny)
 library(tidyverse)
 library(ggplot2)
@@ -13,6 +12,7 @@ library(EmersonDataScience)
 library(DT)
 library(formattable)
 library(sp)
+# library(rsconnect)
 
 source("functions.R")
 
@@ -216,15 +216,6 @@ ui <- fluidPage(
                                                   actionButton("reset", "Reset"),br(),
                                                   "Revert working set of coefs back to the original pasted values by pressing this button at any time.",br(),br(),
                                                   
-                                                  #ADD TEST PTS
-                                                  # numericInput("numPtsAdded", "Add Test Points", value=0, width='115px'),
-                                                  checkboxInput("yesAdd", "Add Test Points", value=FALSE),
-                                                  conditionalPanel(condition = "input.yesAdd == 1",
-                                                                   rHandsontableOutput("addPts"),br(),
-                                                                   tags$head(
-                                                                     tags$style(HTML('#save{background-color:#FFD700}'))
-                                                                   ),
-                                                                   actionButton("save", "Recalculate")),br(),
                                                   h4("EER Goal Seek"),
                                                   fluidRow(
                                                     column(3,
@@ -246,10 +237,47 @@ ui <- fluidPage(
                                                            tags$head(
                                                              tags$style(HTML('#adjust{background-color:#AFEEEE}'))
                                                            ),
-                                                           actionButton("adjust", "Adjust & Plot"))
-                                                  )
+                                                           actionButton("adjust", "Shift"))
+                                                  ),br(),
+                                                  
+                                                  #####add into server###########
+                                                  checkboxInput("twopoint", "Second Point Match", value=FALSE),
+                                                  conditionalPanel(condition = "input.twopoint == 1",
+                                                                   fluidRow(
+                                                                     column(4,
+                                                                            textInput("condit", "Condition", value="10/90", width='120px')),
+                                                                     column(4,
+                                                                            numericInput("desir", "Desired EER", value=11, width='120px'))),
+                                                                   fluidRow(
+                                                                     column(6,
+                                                                            htmlOutput("SecPointOutput")),
+                                                                     column(2,
+                                                                            #tags for button background color work inside a conditional panel
+                                                                            # actionButton("usingCapacity", "Use Capacity", style="background-color: #AFEEEE"),
+                                                                            # br(),
+                                                                            actionButton("usingPower", "Replace Power", style="background-color: #AFEEEE"))
+                                                                     
+                                                                   )
+                                                  )#############################
+                                                  
+                                                  
+                                                  # checkboxInput("yesAdd", "Add Test Points", value=FALSE),
+                                                  # conditionalPanel(condition = "input.yesAdd == 1",
+                                                  #                  rHandsontableOutput("addPts"),br(),
+                                                  #                  tags$head(
+                                                  #                    tags$style(HTML('#save{background-color:#FFD700}'))
+                                                  #                  ),
+                                                  #                  #end comment out later
+                                                  #                  actionButton("save", "Recalculate")),br()
+                                                  
                                            )
                                          ),br(),br(),
+                                         fluidRow(
+                                           tags$head(
+                                             tags$style(HTML('#plotNew{background-color:#FFA500}'))
+                                           ),
+                                           actionButton("plotNew", "Plot")
+                                         ),
                                          fluidRow(
                                            column(6,
                                                   div(plotOutput("capCurve1A"),style="margin-left:-240px; margin-bottom:160px"),
@@ -372,7 +400,6 @@ ui <- fluidPage(
                                                                  textInput("condEnvTemps", "Cond (F) Envelope Coords", value = "80,95,145,145,80"))
                                                           
                                          ))
-                                  
                                 )
                       ),#end well panel
                       
@@ -422,9 +449,7 @@ ui <- fluidPage(
                                                           )
                                          )
                                          
-                                         
                         ), #end conditional panel
-                        
                         #second conditional panel
                         conditionalPanel(condition = "input.choice2 == 'both2'",
                                          fluidRow(
@@ -477,6 +502,11 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  # session$onSessionEnded(function() {
+  #   stopApp()
+  #   q("no")
+  # })
+  
   #########################################################
   
   RV <- reactiveValues()
@@ -487,7 +517,7 @@ server <- function(input, output, session) {
     #coefficients table output
     pasted1A <- readClipboard()
     pasted1A <- as.numeric(unlist((strsplit(pasted1A, split = "\t"))))
-   
+    
     #reset button
     observeEvent(input$reset, {
       
@@ -499,7 +529,7 @@ server <- function(input, output, session) {
       output$table1A = renderDataTable({
         datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
                   callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
-                  options=list(dom='t', ordering=F, digits=8))
+                  options=list(dom='t', ordering=F, digits=10))
       })
     })
     #pastes coefs
@@ -511,101 +541,10 @@ server <- function(input, output, session) {
     output$table1A = renderDataTable({
       datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
-                options=list(dom='t', ordering=F, digits=8))
+                options=list(dom='t', ordering=F, digits=10))
     })
     
-    #Replace** additional test points
-    observeEvent(input$yesAdd, {
-      Evap <- ""
-      Cond <- ""
-      Cap <- ""
-      Pow <- ""
-      Curr <- ""
-      MF <- ""
-      RV$data.in <- data.table::data.table(Evap, Cond, Cap, Pow, Curr, MF)
-    }) #end observe event
-    
-    rea <- reactive({
-      hot <- input$addPts
-      if (!is.null(hot)) as.data.frame(hot_to_r(hot))
-    })
-    
-    output$addPts <- renderRHandsontable({
-      rhandsontable(RV$data.in)
-    })
-    
-    #recalculate coefficients based on additional test points
-    evapPlot <- seq(-10,60,5)
-    condPlot <- seq(75,150,5)
-    numTotal1AA <- length(evapPlot)*length(condPlot)
-    
-    rval <- reactiveValues(df = data.frame(evap = numeric(numTotal1AA),
-                                           cond = numeric(numTotal1AA)) %>%
-                             mutate(evap = rep_len(evapPlot, numTotal1AA),
-                                    cond = rep_len(condPlot, numTotal1AA)))
-    
-    
-    rval$df$Capacity <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CAP[1],
-                               RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
-                               RV$pastedCoeffs1$CAP[5],RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],
-                               RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
-    rval$df$Power <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$POW[1],
-                            RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],
-                            RV$pastedCoeffs1$POW[5],RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],
-                            RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
-    rval$df$Current <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CURR[1],
-                              RV$pastedCoeffs1$CURR[2],RV$pastedCoeffs1$CURR[3],RV$pastedCoeffs1$CURR[4],
-                              RV$pastedCoeffs1$CURR[5],RV$pastedCoeffs1$CURR[6],RV$pastedCoeffs1$CURR[7],
-                              RV$pastedCoeffs1$CURR[8],RV$pastedCoeffs1$CURR[9],RV$pastedCoeffs1$CURR[10])
-    rval$df$MeasMF <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$MF[1],
-                             RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
-                             RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
-                             RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
-    
-    # print(rval$df)
-    
-    observeEvent(input$save, {
-      
-      test <- rval$df
-      test[nrow(test)+1,] <- NA
-      ###below is using data from handsontable inputs
-      evaps <- as.numeric(isolate(rea()[,1]))
-      conds <- as.numeric(isolate(rea()[,2]))
-      # get indices of extisting conditions that need replaced
-      plc1 <- unlist(sapply(test$evap, function(y) match(y,evaps)))
-      index1 <- which(plc1 == 1)
-      
-      plc2 <- unlist(sapply(test$cond, function(y) match(y,conds)))
-      index2 <- which(plc2 == 1)
-      
-      #find the duplicates 
-      if(length(index1) != 0 & length(index2) != 0){
-        indexRem <- Reduce(intersect, list(index1, index2))
-        print(indexRem)
-        #remove the duplicates
-        test <- test[-c(indexRem),]
-      }
-      
-      #add in new test points at bottom of df
-      test$evap[nrow(test)] <- as.numeric(isolate(rea()[,1]))
-      test$cond[nrow(test)] <- as.numeric(isolate(rea()[,2]))
-      test$Capacity[nrow(test)] <- as.numeric(isolate(rea()[,3]))
-      test$Power[nrow(test)] <- as.numeric(isolate(rea()[,4]))
-      test$Current[nrow(test)] <- as.numeric(isolate(rea()[,5]))
-      test$MeasMF[nrow(test)] <- as.numeric(isolate(rea()[,6]))
-      
-      #make coefficients with lm
-      RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(test$evap, test$cond, test$Capacity)
-      RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(test$evap, test$cond, test$Power)
-      RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(test$evap, test$cond, test$Current)
-      RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(test$evap, test$cond,  test$MeasMF)
-      
-      RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,8)
-      rval$df <- test 
-      
-    })
-    
-    #calculate curve % shift
+    #calculate curve % shift (50/115)
     output$shiftOutput = renderUI({
       conditionString <- input$condition
       condition = input$condition %>%
@@ -621,22 +560,127 @@ server <- function(input, output, session) {
       str3 <- paste(strong("Shift capacity", shift[1], "OR shift power", shift[2], "to achieve desired EER"))
       HTML(paste(str1,'<br/>',str2,'<br/>',str3))
     })
+    
+    #second point match (10/90)
+    observeEvent(input$twopoint, {
+      
+      output$SecPointOutput = renderUI({
+        conditStr <- input$condit
+        condition = input$condit %>%
+          str_split_fixed(pattern = '/',n = 2) %>%
+          as.numeric()
+        evap = condition[1]
+        cond = condition[2]
+        
+        RV$one <- evap
+        RV$two <- cond
+        
+        simCAP = mapply(perfCoeff,evap,cond,RV$pastedCoeffs1$CAP[1],RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],RV$pastedCoeffs1$CAP[5],
+                        RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
+        simPOW = mapply(perfCoeff,evap,cond,RV$pastedCoeffs1$POW[1],RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],RV$pastedCoeffs1$POW[5],
+                        RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
+        xpow = (simCAP/input$desir)/simPOW
+        secPtPOW <- xpow*simPOW
+        RV$secs <- secPtPOW
+        str4 <- paste(strong("Adjusted power reaplacement value:", round(secPtPOW,4) ))
+        #return
+        HTML(paste(str4))
+      })
+    }) #end observeEvent "two point match" check box
+    
+    observeEvent(input$usingPower, {
+      rval <- reactiveValues(df = data.frame(evap = c(50,55,50,50,50,50,35,30,30,45,10,45,50,35,40),
+                                             cond = c(75,90,80,90,100,115,100,100,105,100,90,80,105,80,90)))
+      
+      rval$df$Capacity <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CAP[1],
+                                 RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],
+                                 RV$pastedCoeffs1$CAP[5],RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],
+                                 RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
+      rval$df$Power <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$POW[1],
+                              RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],
+                              RV$pastedCoeffs1$POW[5],RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],
+                              RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
+      rval$df$Current <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$CURR[1],
+                                RV$pastedCoeffs1$CURR[2],RV$pastedCoeffs1$CURR[3],RV$pastedCoeffs1$CURR[4],
+                                RV$pastedCoeffs1$CURR[5],RV$pastedCoeffs1$CURR[6],RV$pastedCoeffs1$CURR[7],
+                                RV$pastedCoeffs1$CURR[8],RV$pastedCoeffs1$CURR[9],RV$pastedCoeffs1$CURR[10])
+      rval$df$MeasMF <- mapply(perfCoeff,rval$df$evap,rval$df$cond,RV$pastedCoeffs1$MF[1],
+                               RV$pastedCoeffs1$MF[2],RV$pastedCoeffs1$MF[3],RV$pastedCoeffs1$MF[4],
+                               RV$pastedCoeffs1$MF[5],RV$pastedCoeffs1$MF[6],RV$pastedCoeffs1$MF[7],
+                               RV$pastedCoeffs1$MF[8],RV$pastedCoeffs1$MF[9],RV$pastedCoeffs1$MF[10])
+      test <- round(rval$df,10)
+      test[nrow(test)+1,] <- NA
+      
+      # get indices of extisting conditions that need replaced
+      plc1 <- unlist(sapply(test$evap, function(y) match(y,RV$one)))
+      index1 <- which(plc1 == 1)
+      
+      plc2 <- unlist(sapply(test$cond, function(y) match(y,RV$two)))
+      index2 <- which(plc2 == 1)
+      
+      #find the duplicates
+      if(length(index1) != 0 & length(index2) != 0){
+        indexRem <- Reduce(intersect, list(index1, index2))
+        #remove the duplicates
+        subAndReplace <- test[indexRem,]
+        test <- test[-c(indexRem),]
+      }
+      
+      print(test)
+      print("this is after row is removed")
+      
+      #replacing power
+      print(subAndReplace)
+      print("this is before")
+      
+      subAndReplace[,4] <- RV$secs
+      print(subAndReplace)
+      print("this is after power is replaced in the row")
+      
+      #add in new test points at bottom of df
+      test[nrow(test),] <- subAndReplace
+      
+      print(test)
+      print("this is the rating points after the row is added")
+      
+      #make coefficients with lm
+      RV$pastedCoeffs1$CAP <- makeCoefficientsWithLM(test$evap, test$cond, test$Capacity)
+      RV$pastedCoeffs1$POW <- makeCoefficientsWithLM(test$evap, test$cond, test$Power)
+      RV$pastedCoeffs1$CURR <- makeCoefficientsWithLM(test$evap, test$cond, test$Current)
+      RV$pastedCoeffs1$MF <- makeCoefficientsWithLM(test$evap, test$cond,  test$MeasMF)
+      
+      RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,10)
+      rval$df <- test
+      
+      #update coefs table output
+      output$table1A = renderDataTable({
+        datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
+                  callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                  options=list(dom='t', ordering=F, digits=10)) 
+      })
+      
+    }) #end observeEvent "use power"
+      
+    #adjust coeffs
+    observeEvent(input$adjust, {
+      RV$pastedCoeffs1$CAP <- RV$pastedCoeffs1$CAP*input$adjCap
+      RV$pastedCoeffs1$POW <- RV$pastedCoeffs1$POW*input$adjPow
+      RV$pastedCoeffs1$CURR <- RV$pastedCoeffs1$CURR*input$adjPow
+      RV$pastedCoeffs1$MF <- RV$pastedCoeffs1$MF*input$adjCap
+      
+      RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,10)
+      
+    })
+    
   })#end observe event
   
-  
-  #adjust coeffs using inputs
-  observeEvent(input$adjust, {
+  observeEvent(input$plotNew, {
+    
     #create plot values
     evapPlot <- seq(-10,60,5)
     condPlot <- seq(80,150,10)
     numTotal1A <- length(evapPlot)*length(condPlot)
     
-    RV$pastedCoeffs1$CAP <- RV$pastedCoeffs1$CAP*input$adjCap
-    RV$pastedCoeffs1$POW <- RV$pastedCoeffs1$POW*input$adjPow
-    RV$pastedCoeffs1$CURR <- RV$pastedCoeffs1$CURR*input$adjPow
-    RV$pastedCoeffs1$MF <- RV$pastedCoeffs1$MF*input$adjCap
-    
-    RV$pastedCoeffs1 <- round(RV$pastedCoeffs1,8)
     
     capPlotVals1A <- data.frame(evap = numeric(numTotal1A),
                                 cond = numeric(numTotal1A),
@@ -2067,11 +2111,6 @@ server <- function(input, output, session) {
     }, height = 540, width = 740) #end output
     
   })
-  
-#   session$onSessionEnded(function() {
-#   stopApp()
-#   q("no")
-# })
   
 }#end server
 ####################################################
