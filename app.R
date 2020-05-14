@@ -98,72 +98,72 @@ ui <- fluidPage(
                                        ))),
                         
                         mainPanel(width=5,
-                          column(12, 
-                                 br(),h2("How It Works"),
-                                 h3("Units"),
-                                 "Units are standard English units and constant throughout.", br(),br(),
-                                 column(3,
-                                        "Capacity: BTU/hr",br(),
-                                        "Power: Watts", br(),
-                                        "Current: Amps",
-                                        style="padding:'0px"
-                                 ),
-                                 column(3,
-                                        "EER: BTU/W/hr", br(),
-                                        "Mass Flow: lbm/hr",
-                                        style="padding:'0px"
-                                 ),
-                                 column(4,
-                                        "Temperature: degrees Fahrenheit", br(),
-                                        "Displacement: Cu In/rev",
-                                        style="padding:'0px"
-                                 ),br(),br(),br(),
-                                
-                                 h3("Background Calculations"),
-                                 "The app utilizes an Emerson REFPROP R library created by Abram Yorde. This library implements CoolProp functionality 
+                                  column(12, 
+                                         br(),h2("How It Works"),
+                                         h3("Units"),
+                                         "Units are standard English units and constant throughout.", br(),br(),
+                                         column(3,
+                                                "Capacity: BTU/hr",br(),
+                                                "Power: Watts", br(),
+                                                "Current: Amps",
+                                                style="padding:'0px"
+                                         ),
+                                         column(3,
+                                                "EER: BTU/W/hr", br(),
+                                                "Mass Flow: lbm/hr",
+                                                style="padding:'0px"
+                                         ),
+                                         column(4,
+                                                "Temperature: degrees Fahrenheit", br(),
+                                                "Displacement: Cu In/rev",
+                                                style="padding:'0px"
+                                         ),br(),br(),br(),
+                                         
+                                         h3("Background Calculations"),
+                                         "The app utilizes an Emerson REFPROP R library created by Abram Yorde. This library implements CoolProp functionality 
                                  for thermodynamic calculations.",br(),br(),
-                                 
-                                 strong("Simulated Values"), br(),
-                                 "are calculated using the funtion",br(),
-                                 "C0 + C1*Te + C2*Tc + C3*(Te^2) + C4*Tc*Te + C5*(Tc^2) + C6*(Te^3) + C7*Tc*(Te^2) + C8*Te*(Tc^2) + C9*(Tc^3)",br(),
-                                 "where", br(),
-                                 " -- C0-C9 = ten point coefficients",br(),
-                                 " -- Te = evaporator temperature",br(),
-                                 " -- Tc = condenser temperature",br(),
-                                 "This function can be found on any coefficients Excel sheet published to CPIDView.",br(),br(),
-                                 
-                                 strong("Coeffcients"), br(),
-                                 "are calculated by reverse engineering the above function.",br(),
-                                 "A linear regression model is created where",br(),
-                                 " -- Response variable = known metric (cap, pow, curr..) value", br(),
-                                 " -- Predictors = Te, Tc, Tc*Te, Tc^2, ... (from the function above)", br(),
-                                 "Coefficients calculated by the linear model are then extracted using an open-souce R function.",br(),br(),
-                                 
-                                 strong("Calculated mass flow"),br(),
-                                 "is calculated using the equation Capacity / H1 - H2 where",br(),
-                                 " -- H1 = enthalpy calculated from evap temp + superheat and suction pressure",br(),
-                                 " -- H2 = enthalpy calculated from cond temp - subcooling and discharge pressure", br(),br(),
-                                 
-                                 strong("Isentropic Efficiency"),br(),
-                                 "is calculated from the ratio EE/TEER where TEER is calculated using the equation",
-                                 "(ReturnGasH - SubcoolLiqH) / (DischargeGasIdealH - ReturnGasH) * 3.412 where", br(),
-                                 " -- ReturnGasH = enthalpy calculated using evap temp + superheat and suction pressure",br(),
-                                 " -- SubcoolLiqH = enthalpy calculated using discharge temp - subcooling and discharge pressure",br(),
-                                 " -- DischargeGasIdealH = enthalpy calculated using inlet entropy and discharge pressure",br(),
-                                 " -- 3.412 = fixed unit conversion",br(),br(),
-                                 
-                                 strong("Volumetric Efficiency"),br(),
-                                 "is calculated using the equation Mass Flow / (Density * Displacement * 3500 * 0.034722) where",br(),
-                                 " -- Density = calculated from evap temp + superheat and suction pressure, multiplied by 1728 unit conversion factor",br(),
-                                 " -- Displacement = input by user",br(),
-                                 " -- 3500 = fixed value for RPM",br(),
-                                 " -- 0.034722 = fixed unit conversion factor",br(),
-                                 
-                                 h3("Add Test Points"),
-                                 "Using the built in 'Add Test Points' function finds the index of the set of simulated values matching the
+                                         
+                                         strong("Simulated Values"), br(),
+                                         "are calculated using the funtion",br(),
+                                         "C0 + C1*Te + C2*Tc + C3*(Te^2) + C4*Tc*Te + C5*(Tc^2) + C6*(Te^3) + C7*Tc*(Te^2) + C8*Te*(Tc^2) + C9*(Tc^3)",br(),
+                                         "where", br(),
+                                         " -- C0-C9 = ten point coefficients",br(),
+                                         " -- Te = evaporator temperature",br(),
+                                         " -- Tc = condenser temperature",br(),
+                                         "This function can be found on any coefficients Excel sheet published to CPIDView.",br(),br(),
+                                         
+                                         strong("Coeffcients"), br(),
+                                         "are calculated by reverse engineering the above function.",br(),
+                                         "A linear regression model is created where",br(),
+                                         " -- Response variable = known metric (cap, pow, curr..) value", br(),
+                                         " -- Predictors = Te, Tc, Tc*Te, Tc^2, ... (from the function above)", br(),
+                                         "Coefficients calculated by the linear model are then extracted using an open-souce R function.",br(),br(),
+                                         
+                                         strong("Calculated mass flow"),br(),
+                                         "is calculated using the equation Capacity / H1 - H2 where",br(),
+                                         " -- H1 = enthalpy calculated from evap temp + superheat and suction pressure",br(),
+                                         " -- H2 = enthalpy calculated from cond temp - subcooling and discharge pressure", br(),br(),
+                                         
+                                         strong("Isentropic Efficiency"),br(),
+                                         "is calculated from the ratio EE/TEER where TEER is calculated using the equation",
+                                         "(ReturnGasH - SubcoolLiqH) / (DischargeGasIdealH - ReturnGasH) * 3.412 where", br(),
+                                         " -- ReturnGasH = enthalpy calculated using evap temp + superheat and suction pressure",br(),
+                                         " -- SubcoolLiqH = enthalpy calculated using discharge temp - subcooling and discharge pressure",br(),
+                                         " -- DischargeGasIdealH = enthalpy calculated using inlet entropy and discharge pressure",br(),
+                                         " -- 3.412 = fixed unit conversion",br(),br(),
+                                         
+                                         strong("Volumetric Efficiency"),br(),
+                                         "is calculated using the equation Mass Flow / (Density * Displacement * 3500 * 0.034722) where",br(),
+                                         " -- Density = calculated from evap temp + superheat and suction pressure, multiplied by 1728 unit conversion factor",br(),
+                                         " -- Displacement = input by user",br(),
+                                         " -- 3500 = fixed value for RPM",br(),
+                                         " -- 0.034722 = fixed unit conversion factor",br(),
+                                         
+                                         h3("Add Test Points"),
+                                         "Using the built in 'Add Test Points' function finds the index of the set of simulated values matching the
                                  input evap and cond temperatures, then replaces them with the input values.",br(),
-                                 "Coefficients are then recalculated using the new data set, including the substitution."
-                          )
+                                         "Coefficients are then recalculated using the new data set, including the substitution."
+                                  )
                         ))),
              
              tabPanel("Create",
@@ -333,7 +333,7 @@ ui <- fluidPage(
                                                                    htmlOutput("SecPointOutput2"),
                                                                    actionButton("usingPower2", "Replace Power", style="background-color: #AFEEEE")
                                                   ))),
-                                           actionButton("plotter", "Plot"),
+                                         actionButton("plotter", "Plot", style="background-color: #FFA500"),
                                          fluidRow(
                                            column(6,
                                                   div(plotOutput("capCurve1B"),style="margin-left:-240px; margin-bottom:160px"),
@@ -409,11 +409,14 @@ ui <- fluidPage(
                                            column(6,
                                                   "Paste your first set of coefficients here.",br(),br(),
                                                   actionButton("paste2A.1", "Paste", style="background-color: #98FB97"),
+                                                  actionButton("pullPrev", "Pull from Create>Coefs", style="background-color: #fffa6b"),
                                                   dataTableOutput("table2A.1"),
+                                                  actionButton("compare", "Compare", style="background-color:#FFA500"),
                                                   style = "float:left;"),
                                            column(6,
                                                   "Paste your second set of coefficients here.",br(),br(),
                                                   actionButton("paste2A.2", "Paste",style="background-color: #98FB97"),
+                                                  actionButton("pullPrevELT", "Pull from Create>ELT", style="background-color: #fffa6b"),
                                                   dataTableOutput('table2A.2'), br(),br())
                                          ),
                                          fluidRow(selectInput("show", "",
@@ -452,13 +455,14 @@ ui <- fluidPage(
                                                   "Paste coefficients here first.",br(),br(),
                                                   actionButton("paste2B", "Paste",style="background-color: #98FB97"),
                                                   br(),br(),br(),
-                                                  dataTableOutput("table2B")
+                                                  dataTableOutput("table2B"),
+                                                  actionButton("compare2", "Compare", style="background-color:#FFA500")
                                            ),
                                            column(6,
                                                   "Accepts .csv file type and must contain at least 12 unique test points.",
                                                   br(),br(),
                                                   fileInput("upload2B", "File Upload", multiple=F, accept=c(".csv"), width = '400px'),
-                                                  dataTableOutput("createCoeffs2B")
+                                                  dataTableOutput("createCoeffs2B"),
                                            )),
                                          
                                          fluidRow(selectInput("show2", "",
@@ -467,27 +471,27 @@ ui <- fluidPage(
                                          
                                          #if plots is selected, show plots
                                          conditionalPanel(condition = "input.show2 == 'plots2'",
-                                                    fluidRow(
-                                                      column(6,
-                                                             div(plotOutput("capDifPlot2B"), style="margin-bottom:160px"),
-                                                             div(plotOutput("currDifPlot2B"), style="margin-bottom:160px"),
-                                                             div(plotOutput("MeasMFDifPlot2B"), style="margin-bottom:160px"),
-                                                             div(plotOutput("isenEffyPlot2B"), style="margin-bottom:160px"),
-                                                             style='padding-left:0px;'
-                                                      ),
-                                                      column(6,
-                                                             div(plotOutput("powDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
-                                                             div(plotOutput("EERDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
-                                                             div(plotOutput("CalcMFDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
-                                                             div(plotOutput("volEffyPlot2B"),style="margin-left:300px; margin-bottom:160px"),
-                                                             style='padding-right:0px;'
-                                                      ))),
+                                                          fluidRow(
+                                                            column(6,
+                                                                   div(plotOutput("capDifPlot2B"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("currDifPlot2B"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("MeasMFDifPlot2B"), style="margin-bottom:160px"),
+                                                                   div(plotOutput("isenEffyPlot2B"), style="margin-bottom:160px"),
+                                                                   style='padding-left:0px;'
+                                                            ),
+                                                            column(6,
+                                                                   div(plotOutput("powDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("EERDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("CalcMFDifPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                                   div(plotOutput("volEffyPlot2B"),style="margin-left:300px; margin-bottom:160px"),
+                                                                   style='padding-right:0px;'
+                                                            ))),
                                          #if table is selected, show table
                                          conditionalPanel(condition = "input.show2 == 'table2'",
                                                           fluidRow(
                                                             div(formattableOutput("compareTable2B"), style = "overflow-y: scroll; margin-right:-550px")
                                                           ))#end conditional panel 
-                                         )#end conditional panel       
+                        )#end conditional panel       
                         
                       ))
   ))#end navbar and ui
@@ -631,7 +635,7 @@ server <- function(input, output, session) {
         subAndReplace <- test[indexRem,]
         test <- test[-c(indexRem),]
       }
-    
+      
       subAndReplace[,4] <- RV$secs
       #add in new test points at bottom of df
       test[nrow(test),] <- subAndReplace
@@ -651,9 +655,8 @@ server <- function(input, output, session) {
                   callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                   options=list(dom='t', ordering=F, digits=10)) 
       })
-      
     }) #end observeEvent "use power"
-      
+    
   })#end observe event
   
   observeEvent(input$plotNew, {
@@ -1025,7 +1028,7 @@ server <- function(input, output, session) {
   }) #end observeEvent "two point match" check box
   
   observeEvent(input$usingPower2, {
-   
+    
     rval2 <- reactiveValues(df2 = data.frame(evap = c(50,55,50,50,50,50,35,30,30,45,10,45,50,35,40),
                                              cond = c(75,90,80,90,100,115,100,100,105,100,90,80,105,80,90)))
     
@@ -1084,8 +1087,8 @@ server <- function(input, output, session) {
     })
     
   }) #end observeEvent "use power"
-    
-    observeEvent(input$plotter, {
+  
+  observeEvent(input$plotter, {
     #create plot values
     evapPlot <- seq(-10,60,5)
     condPlot <- seq(80,150,10)
@@ -1315,7 +1318,34 @@ server <- function(input, output, session) {
       datatable(RV2$pastedCoeffs2A.1, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                 options=list(dom='t', ordering=F))
-    })#end observe event
+    })#end output
+  })#end observe event
+  
+  #pull from Create tab, if coefs were pasted
+  observeEvent(input$pullPrev, {
+    RV2$pastedCoeffs2A.1 <- RV$pastedCoeffs1
+    
+    output$table2A.1 = renderDataTable({
+      datatable(RV2$pastedCoeffs2A.1, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
+    
+  })
+  
+  #pull from Create tab, if coefs were made from ELT
+  observeEvent(input$pullPrevELT, {
+    RVChoice1B$newCoef1B <- RVChoice1B$newCoef1B[,c(1,2,3,5)]
+    colnames(RVChoice1B$newCoef1B) <- c("CAP", "POW", "CURR", "MF")
+    
+    RV2$pastedCoeffs2A.2 <- RVChoice1B$newCoef1B
+    
+    output$table2A.2 = renderDataTable({
+      datatable(RV2$pastedCoeffs2A.2, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
+    
   })
   
   #second set of coeffs
@@ -1337,7 +1367,8 @@ server <- function(input, output, session) {
     })#end observe event
   })
   
-  observeEvent(input$paste2A.2, {
+  observeEvent(input$compare, {
+
     #create envelope
     if(input$envel == 'custom') {
       evapEnv <- input$evapEnvTemps %>%
@@ -1351,7 +1382,7 @@ server <- function(input, output, session) {
       evapEnv <- c(-10,-10,40,55,55)
       condEnv <- c(80,100,145,145,80)
     }
-
+    
     #the below uses the envelope_builder function of the refprop package
     Boundary = as.data.frame(cbind(evapEnv, condEnv))
     Test_Data = Envelope_Builder(Boundary, 10)
@@ -1364,23 +1395,23 @@ server <- function(input, output, session) {
     
     #####first set of coefficients
     comparisonDF2A$CAP_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CAP[1],
-                                  RV2$pastedCoeffs2A.1$CAP[2],RV2$pastedCoeffs2A.1$CAP[3],RV2$pastedCoeffs2A.1$CAP[4],
-                                  RV2$pastedCoeffs2A.1$CAP[5],RV2$pastedCoeffs2A.1$CAP[6],RV2$pastedCoeffs2A.1$CAP[7],
-                                  RV2$pastedCoeffs2A.1$CAP[8],RV2$pastedCoeffs2A.1$CAP[9],RV2$pastedCoeffs2A.1$CAP[10])
+                                      RV2$pastedCoeffs2A.1$CAP[2],RV2$pastedCoeffs2A.1$CAP[3],RV2$pastedCoeffs2A.1$CAP[4],
+                                      RV2$pastedCoeffs2A.1$CAP[5],RV2$pastedCoeffs2A.1$CAP[6],RV2$pastedCoeffs2A.1$CAP[7],
+                                      RV2$pastedCoeffs2A.1$CAP[8],RV2$pastedCoeffs2A.1$CAP[9],RV2$pastedCoeffs2A.1$CAP[10])
     comparisonDF2A$POW_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$POW[1],
-                                  RV2$pastedCoeffs2A.1$POW[2],RV2$pastedCoeffs2A.1$POW[3],RV2$pastedCoeffs2A.1$POW[4],
-                                  RV2$pastedCoeffs2A.1$POW[5],RV2$pastedCoeffs2A.1$POW[6],RV2$pastedCoeffs2A.1$POW[7],
-                                  RV2$pastedCoeffs2A.1$POW[8],RV2$pastedCoeffs2A.1$POW[9],RV2$pastedCoeffs2A.1$POW[10])
+                                      RV2$pastedCoeffs2A.1$POW[2],RV2$pastedCoeffs2A.1$POW[3],RV2$pastedCoeffs2A.1$POW[4],
+                                      RV2$pastedCoeffs2A.1$POW[5],RV2$pastedCoeffs2A.1$POW[6],RV2$pastedCoeffs2A.1$POW[7],
+                                      RV2$pastedCoeffs2A.1$POW[8],RV2$pastedCoeffs2A.1$POW[9],RV2$pastedCoeffs2A.1$POW[10])
     comparisonDF2A$EER_Mod1 <- comparisonDF2A$CAP_Mod1 / comparisonDF2A$POW_Mod1
     comparisonDF2A$CURR_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$CURR[1],
-                                   RV2$pastedCoeffs2A.1$CURR[2],RV2$pastedCoeffs2A.1$CURR[3],RV2$pastedCoeffs2A.1$CURR[4],
-                                   RV2$pastedCoeffs2A.1$CURR[5],RV2$pastedCoeffs2A.1$CURR[6],RV2$pastedCoeffs2A.1$CURR[7],
-                                   RV2$pastedCoeffs2A.1$CURR[8],RV2$pastedCoeffs2A.1$CURR[9],RV2$pastedCoeffs2A.1$CURR[10])
+                                       RV2$pastedCoeffs2A.1$CURR[2],RV2$pastedCoeffs2A.1$CURR[3],RV2$pastedCoeffs2A.1$CURR[4],
+                                       RV2$pastedCoeffs2A.1$CURR[5],RV2$pastedCoeffs2A.1$CURR[6],RV2$pastedCoeffs2A.1$CURR[7],
+                                       RV2$pastedCoeffs2A.1$CURR[8],RV2$pastedCoeffs2A.1$CURR[9],RV2$pastedCoeffs2A.1$CURR[10])
     comparisonDF2A$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.1$MF[1],
-                                     RV2$pastedCoeffs2A.1$MF[2],RV2$pastedCoeffs2A.1$MF[3],RV2$pastedCoeffs2A.1$MF[4],
-                                     RV2$pastedCoeffs2A.1$MF[5],RV2$pastedCoeffs2A.1$MF[6],RV2$pastedCoeffs2A.1$MF[7],
-                                     RV2$pastedCoeffs2A.1$MF[8],RV2$pastedCoeffs2A.1$MF[9],RV2$pastedCoeffs2A.1$MF[10])
-
+                                         RV2$pastedCoeffs2A.1$MF[2],RV2$pastedCoeffs2A.1$MF[3],RV2$pastedCoeffs2A.1$MF[4],
+                                         RV2$pastedCoeffs2A.1$MF[5],RV2$pastedCoeffs2A.1$MF[6],RV2$pastedCoeffs2A.1$MF[7],
+                                         RV2$pastedCoeffs2A.1$MF[8],RV2$pastedCoeffs2A.1$MF[9],RV2$pastedCoeffs2A.1$MF[10])
+    
     #calcs calc mf
     calcMF1 <- data.frame(PSuc = numeric(length(comparisonDF2A$Evap)))
     calcMF1$PSuc = mapply(refprope,'P','T',comparisonDF2A$Evap,'Q',1,input$refrigerant2)
@@ -1413,22 +1444,22 @@ server <- function(input, output, session) {
     
     ##### second set of coefficients
     comparisonDF2A$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CAP[1],
-                                  RV2$pastedCoeffs2A.2$CAP[2],RV2$pastedCoeffs2A.2$CAP[3],RV2$pastedCoeffs2A.2$CAP[4],
-                                  RV2$pastedCoeffs2A.2$CAP[5],RV2$pastedCoeffs2A.2$CAP[6],RV2$pastedCoeffs2A.2$CAP[7],
-                                  RV2$pastedCoeffs2A.2$CAP[8],RV2$pastedCoeffs2A.2$CAP[9],RV2$pastedCoeffs2A.2$CAP[10])
+                                      RV2$pastedCoeffs2A.2$CAP[2],RV2$pastedCoeffs2A.2$CAP[3],RV2$pastedCoeffs2A.2$CAP[4],
+                                      RV2$pastedCoeffs2A.2$CAP[5],RV2$pastedCoeffs2A.2$CAP[6],RV2$pastedCoeffs2A.2$CAP[7],
+                                      RV2$pastedCoeffs2A.2$CAP[8],RV2$pastedCoeffs2A.2$CAP[9],RV2$pastedCoeffs2A.2$CAP[10])
     comparisonDF2A$POW_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$POW[1],
-                                  RV2$pastedCoeffs2A.2$POW[2],RV2$pastedCoeffs2A.2$POW[3],RV2$pastedCoeffs2A.2$POW[4],
-                                  RV2$pastedCoeffs2A.2$POW[5],RV2$pastedCoeffs2A.2$POW[6],RV2$pastedCoeffs2A.2$POW[7],
-                                  RV2$pastedCoeffs2A.2$POW[8],RV2$pastedCoeffs2A.2$POW[9],RV2$pastedCoeffs2A.2$POW[10])
+                                      RV2$pastedCoeffs2A.2$POW[2],RV2$pastedCoeffs2A.2$POW[3],RV2$pastedCoeffs2A.2$POW[4],
+                                      RV2$pastedCoeffs2A.2$POW[5],RV2$pastedCoeffs2A.2$POW[6],RV2$pastedCoeffs2A.2$POW[7],
+                                      RV2$pastedCoeffs2A.2$POW[8],RV2$pastedCoeffs2A.2$POW[9],RV2$pastedCoeffs2A.2$POW[10])
     comparisonDF2A$EER_Mod2 <- comparisonDF2A$CAP_Mod2 / comparisonDF2A$POW_Mod2
     comparisonDF2A$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$CURR[1],
-                                   RV2$pastedCoeffs2A.2$CURR[2],RV2$pastedCoeffs2A.2$CURR[3],RV2$pastedCoeffs2A.2$CURR[4],
-                                   RV2$pastedCoeffs2A.2$CURR[5],RV2$pastedCoeffs2A.2$CURR[6],RV2$pastedCoeffs2A.2$CURR[7],
-                                   RV2$pastedCoeffs2A.2$CURR[8],RV2$pastedCoeffs2A.2$CURR[9],RV2$pastedCoeffs2A.2$CURR[10])
+                                       RV2$pastedCoeffs2A.2$CURR[2],RV2$pastedCoeffs2A.2$CURR[3],RV2$pastedCoeffs2A.2$CURR[4],
+                                       RV2$pastedCoeffs2A.2$CURR[5],RV2$pastedCoeffs2A.2$CURR[6],RV2$pastedCoeffs2A.2$CURR[7],
+                                       RV2$pastedCoeffs2A.2$CURR[8],RV2$pastedCoeffs2A.2$CURR[9],RV2$pastedCoeffs2A.2$CURR[10])
     comparisonDF2A$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2A$Evap,comparisonDF2A$Cond,RV2$pastedCoeffs2A.2$MF[1],
-                                     RV2$pastedCoeffs2A.2$MF[2],RV2$pastedCoeffs2A.2$MF[3],RV2$pastedCoeffs2A.2$MF[4],
-                                     RV2$pastedCoeffs2A.2$MF[5],RV2$pastedCoeffs2A.2$MF[6],RV2$pastedCoeffs2A.2$MF[7],
-                                     RV2$pastedCoeffs2A.2$MF[8],RV2$pastedCoeffs2A.2$MF[9],RV2$pastedCoeffs2A.2$MF[10])
+                                         RV2$pastedCoeffs2A.2$MF[2],RV2$pastedCoeffs2A.2$MF[3],RV2$pastedCoeffs2A.2$MF[4],
+                                         RV2$pastedCoeffs2A.2$MF[5],RV2$pastedCoeffs2A.2$MF[6],RV2$pastedCoeffs2A.2$MF[7],
+                                         RV2$pastedCoeffs2A.2$MF[8],RV2$pastedCoeffs2A.2$MF[9],RV2$pastedCoeffs2A.2$MF[10])
     #calcs calc mf
     calcMF2 <- data.frame(PSuc = numeric(length(comparisonDF2A$Evap)))
     calcMF2$PSuc = mapply(refprope,'P','T',comparisonDF2A$Evap,'Q',1,input$refrigerant2)
@@ -1758,12 +1789,36 @@ server <- function(input, output, session) {
                                  MeasMF = pasted2B[31:40])
     
     RV3$pastedCoeffs2B <- pastedCoeffs2B
-
+    
     output$table2B = renderDataTable({
       datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                 options=list(dom='t', ordering=F))
     })#end output
+  })
+  
+  #pull from Create tab, if coefs were pasted
+  observeEvent(input$pullPrev2, {
+    RV3$pastedCoeffs2B <- RV$pastedCoeffs1
+    
+    output$table2B = renderDataTable({
+      datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
+    
+  })
+  
+  #pull from Create tab, if coefs were made from ELT
+  observeEvent(input$pullPrevELT2, {
+    RV3$pastedCoeffs2B <- RVChoice1B$newCoef1B
+    
+    output$table2B = renderDataTable({
+      datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
+                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+                options=list(dom='t', ordering=F))
+    })#end output
+    
   })
   
   observeEvent(input$upload2B, {
@@ -1786,6 +1841,9 @@ server <- function(input, output, session) {
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                 options=list(dom='t', ordering=F))
     })#end output
+  })
+  
+  observeEvent(input$compare2, {
     
     if(input$envel == 'custom') {
       evapEnv <- input$evapEnvTemps %>%
@@ -1799,7 +1857,7 @@ server <- function(input, output, session) {
       evapEnv <- c(-10,-10,40,55,55)
       condEnv <- c(80,100,145,145,80)
     }
-  
+    
     #the below uses the envelope_builder function of the refprop package
     Boundary = as.data.frame(cbind(evapEnv, condEnv))
     Test_Data = Envelope_Builder(Boundary, 10)
@@ -1812,22 +1870,22 @@ server <- function(input, output, session) {
     
     #####first set of coefficients
     comparisonDF2B$CAP_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CAP[1],
-                                  RV3$pastedCoeffs2B$CAP[2],RV3$pastedCoeffs2B$CAP[3],RV3$pastedCoeffs2B$CAP[4],
-                                  RV3$pastedCoeffs2B$CAP[5],RV3$pastedCoeffs2B$CAP[6],RV3$pastedCoeffs2B$CAP[7],
-                                  RV3$pastedCoeffs2B$CAP[8],RV3$pastedCoeffs2B$CAP[9],RV3$pastedCoeffs2B$CAP[10])
+                                      RV3$pastedCoeffs2B$CAP[2],RV3$pastedCoeffs2B$CAP[3],RV3$pastedCoeffs2B$CAP[4],
+                                      RV3$pastedCoeffs2B$CAP[5],RV3$pastedCoeffs2B$CAP[6],RV3$pastedCoeffs2B$CAP[7],
+                                      RV3$pastedCoeffs2B$CAP[8],RV3$pastedCoeffs2B$CAP[9],RV3$pastedCoeffs2B$CAP[10])
     comparisonDF2B$POW_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$POW[1],
-                                  RV3$pastedCoeffs2B$POW[2],RV3$pastedCoeffs2B$POW[3],RV3$pastedCoeffs2B$POW[4],
-                                  RV3$pastedCoeffs2B$POW[5],RV3$pastedCoeffs2B$POW[6],RV3$pastedCoeffs2B$POW[7],
-                                  RV3$pastedCoeffs2B$POW[8],RV3$pastedCoeffs2B$POW[9],RV3$pastedCoeffs2B$POW[10])
+                                      RV3$pastedCoeffs2B$POW[2],RV3$pastedCoeffs2B$POW[3],RV3$pastedCoeffs2B$POW[4],
+                                      RV3$pastedCoeffs2B$POW[5],RV3$pastedCoeffs2B$POW[6],RV3$pastedCoeffs2B$POW[7],
+                                      RV3$pastedCoeffs2B$POW[8],RV3$pastedCoeffs2B$POW[9],RV3$pastedCoeffs2B$POW[10])
     comparisonDF2B$EER_Mod1 <- comparisonDF2B$CAP_Mod1 / comparisonDF2B$POW_Mod1
     comparisonDF2B$CURR_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$CURR[1],
-                                   RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
-                                   RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
-                                   RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
+                                       RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
+                                       RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
+                                       RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
     comparisonDF2B$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MeasMF[1],
-                                     RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
-                                     RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
-                                     RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
+                                         RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
+                                         RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
+                                         RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
     #calcs calc mf
     calcMF3 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     calcMF3$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1860,22 +1918,22 @@ server <- function(input, output, session) {
     
     ##### second set, created from uploaded test data
     comparisonDF2B$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CAP[1],
-                                  newCoef2B$CAP[2],newCoef2B$CAP[3],newCoef2B$CAP[4],
-                                  newCoef2B$CAP[5],newCoef2B$CAP[6],newCoef2B$CAP[7],
-                                  newCoef2B$CAP[8],newCoef2B$CAP[9],newCoef2B$CAP[10])
+                                      newCoef2B$CAP[2],newCoef2B$CAP[3],newCoef2B$CAP[4],
+                                      newCoef2B$CAP[5],newCoef2B$CAP[6],newCoef2B$CAP[7],
+                                      newCoef2B$CAP[8],newCoef2B$CAP[9],newCoef2B$CAP[10])
     comparisonDF2B$POW_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$POW[1],
-                                  newCoef2B$POW[2],newCoef2B$POW[3],newCoef2B$POW[4],
-                                  newCoef2B$POW[5],newCoef2B$POW[6],newCoef2B$POW[7],
-                                  newCoef2B$POW[8],newCoef2B$POW[9],newCoef2B$POW[10])
+                                      newCoef2B$POW[2],newCoef2B$POW[3],newCoef2B$POW[4],
+                                      newCoef2B$POW[5],newCoef2B$POW[6],newCoef2B$POW[7],
+                                      newCoef2B$POW[8],newCoef2B$POW[9],newCoef2B$POW[10])
     comparisonDF2B$EER_Mod2 <- comparisonDF2B$CAP_Mod2 / comparisonDF2B$POW_Mod2
     comparisonDF2B$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CURR[1],
-                                   newCoef2B$CURR[2],newCoef2B$CURR[3],newCoef2B$CURR[4],
-                                   newCoef2B$CURR[5],newCoef2B$CURR[6],newCoef2B$CURR[7],
-                                   newCoef2B$CURR[8],newCoef2B$CURR[9],newCoef2B$CURR[10])
+                                       newCoef2B$CURR[2],newCoef2B$CURR[3],newCoef2B$CURR[4],
+                                       newCoef2B$CURR[5],newCoef2B$CURR[6],newCoef2B$CURR[7],
+                                       newCoef2B$CURR[8],newCoef2B$CURR[9],newCoef2B$CURR[10])
     comparisonDF2B$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$MeasMF[1],
-                                     newCoef2B$MeasMF[2],newCoef2B$MeasMF[3],newCoef2B$MeasMF[4],
-                                     newCoef2B$MeasMF[5],newCoef2B$MeasMF[6],newCoef2B$MeasMF[7],
-                                     newCoef2B$MeasMF[8],newCoef2B$MeasMF[9],newCoef2B$MeasMF[10])
+                                         newCoef2B$MeasMF[2],newCoef2B$MeasMF[3],newCoef2B$MeasMF[4],
+                                         newCoef2B$MeasMF[5],newCoef2B$MeasMF[6],newCoef2B$MeasMF[7],
+                                         newCoef2B$MeasMF[8],newCoef2B$MeasMF[9],newCoef2B$MeasMF[10])
     
     #calcs calc mf
     calcMF4 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
