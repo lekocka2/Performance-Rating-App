@@ -12,7 +12,6 @@ library(EmersonDataScience)
 library(DT)
 library(formattable)
 library(sp)
-# library(rsconnect)
 
 source("functions.R")
 
@@ -159,10 +158,8 @@ ui <- fluidPage(
                                          " -- 3500 = fixed value for RPM",br(),
                                          " -- 0.034722 = fixed unit conversion factor",br(),
                                          
-                                         h3("Add Test Points"),
-                                         "Using the built in 'Add Test Points' function finds the index of the set of simulated values matching the
-                                 input evap and cond temperatures, then replaces them with the input values.",br(),
-                                         "Coefficients are then recalculated using the new data set, including the substitution."
+                                         h3("Two Point Match"),
+                                         "The app simulates values for Cap, Pow, Curr, and MF and "
                                   )
                         ))),
              
@@ -248,7 +245,7 @@ ui <- fluidPage(
                                                                      column(4,
                                                                             textInput("condit", "Condition", value="10/90", width='120px')),
                                                                      column(4,
-                                                                            numericInput("desir", "Desired EER", value=11, width='120px'))),
+                                                                            numericInput("adjust_POW", "Adjust Pow", value=1, width='160px'))),
                                                                    fluidRow(
                                                                      column(6,
                                                                             htmlOutput("SecPointOutput")),
@@ -326,11 +323,11 @@ ui <- fluidPage(
                                                   div(numericInput("adjPow2", "Adjust Pow/Cur", value=1, width='120px'),style="margin-left:-100px;"),
                                                   style='padding:2px;'),
                                            #second point match
-                                           column(2, br(),br(),br(),br(),br(),
+                                           column(2, br(),
                                                   checkboxInput("twopoint2", "Second Point Match", value=FALSE),
                                                   conditionalPanel(condition = "input.twopoint2 == 1",
                                                                    textInput("condit2", "Condition", value="10/90", width='120px'),     
-                                                                   numericInput("desir2", "Desired EER", value=11, width='120px'),
+                                                                   numericInput("adjust_POW2", "Adjust Pow", value=1, width='120px'),
                                                                    htmlOutput("SecPointOutput2"),
                                                                    actionButton("usingPower2", "Replace Power", style="background-color: #AFEEEE")
                                                   ))),
@@ -584,20 +581,21 @@ server <- function(input, output, session) {
           as.numeric()
         evap = condition[1]
         cond = condition[2]
-        
         RV$one <- evap
         RV$two <- cond
-        
         simCAP = mapply(perfCoeff,evap,cond,RV$pastedCoeffs1$CAP[1],RV$pastedCoeffs1$CAP[2],RV$pastedCoeffs1$CAP[3],RV$pastedCoeffs1$CAP[4],RV$pastedCoeffs1$CAP[5],
                         RV$pastedCoeffs1$CAP[6],RV$pastedCoeffs1$CAP[7],RV$pastedCoeffs1$CAP[8],RV$pastedCoeffs1$CAP[9],RV$pastedCoeffs1$CAP[10])
         simPOW = mapply(perfCoeff,evap,cond,RV$pastedCoeffs1$POW[1],RV$pastedCoeffs1$POW[2],RV$pastedCoeffs1$POW[3],RV$pastedCoeffs1$POW[4],RV$pastedCoeffs1$POW[5],
                         RV$pastedCoeffs1$POW[6],RV$pastedCoeffs1$POW[7],RV$pastedCoeffs1$POW[8],RV$pastedCoeffs1$POW[9],RV$pastedCoeffs1$POW[10])
-        xpow = (simCAP/input$desir)/simPOW
-        secPtPOW <- xpow*simPOW
-        RV$secs <- secPtPOW
-        str4 <- paste(strong("Adjusted power reaplacement value:", round(secPtPOW,4) ))
-        #return
-        HTML(paste(str4))
+        
+        adjustedPOWVAL <- simPOW*input$adjust_POW
+        RV$secs <- adjustedPOWVAL #to use in the next observeEvent
+        targEER <- simCAP/adjustedPOWVAL
+        str1 <- paste("Capacity at", conditStr, ":", round(simCAP,2))
+        str2 <- paste("Adjusted power at", conditStr, ":", round(simPOW,2))
+        str3 <- paste("Target EER:", round(targEER,2))
+        
+        HTML(paste(str1, '<br>', str2, '<br>', str3))#return this
       })
     }) #end observeEvent "two point match" check box
     
@@ -1021,12 +1019,16 @@ server <- function(input, output, session) {
                        RVChoice1B$newCoef1B$CAP[6],RVChoice1B$newCoef1B$CAP[7],RVChoice1B$newCoef1B$CAP[8],RVChoice1B$newCoef1B$CAP[9],RVChoice1B$newCoef1B$CAP[10])
       simPOW2 = mapply(perfCoeff,evap,cond,RVChoice1B$newCoef1B$POW[1],RVChoice1B$newCoef1B$POW[2],RVChoice1B$newCoef1B$POW[3],RVChoice1B$newCoef1B$POW[4],RVChoice1B$newCoef1B$POW[5],
                        RVChoice1B$newCoef1B$POW[6],RVChoice1B$newCoef1B$POW[7],RVChoice1B$newCoef1B$POW[8],RVChoice1B$newCoef1B$POW[9],RVChoice1B$newCoef1B$POW[10])
-      xpow2 = (simCAP2/input$desir2)/simPOW2
-      secPtPOW2 <- xpow2*simPOW2
-      RVChoice1B$secs2 <- secPtPOW2
-      str4 <- paste(strong("Adjusted power reaplacement value:", round(secPtPOW2,4) ))
+      
+      adjustedPOWVAL2 <- simPOW2*input$adjust_POW2
+      RVChoice1B$secs2 <- adjustedPOWVAL2
+      targEER2 <- simCAP2/adjustedPOWVAL2
+      str1 <- paste("Capacity at", conditStr2, ":", round(simCAP2,2))
+      str2 <- paste("Adjusted power at", conditStr2, ":", round(simPOW2,2))
+      str3 <- paste("Target EER:", targEER2)
+      
       #return
-      HTML(paste(str4))
+      HTML(paste(str1, '<br>', str2, '<br>', str3))
     })
   }) #end observeEvent "two point match" check box
   
