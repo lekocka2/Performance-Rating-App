@@ -1025,7 +1025,7 @@ server <- function(input, output, session) {
       targEER2 <- simCAP2/adjustedPOWVAL2
       str1 <- paste("Capacity at", conditStr2, ":", round(simCAP2,2))
       str2 <- paste("Adjusted power at", conditStr2, ":", round(simPOW2,2))
-      str3 <- paste("Target EER:", targEER2)
+      str3 <- paste("Target EER:", round(targEER2, 2))
       
       #return
       HTML(paste(str1, '<br>', str2, '<br>', str3))
@@ -1373,7 +1373,6 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$compare, {
-browser()
     #create envelope
     if(input$envel == 'custom') {
       evapEnv <- input$evapEnvTemps %>%
