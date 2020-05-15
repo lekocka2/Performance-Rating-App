@@ -462,7 +462,7 @@ ui <- fluidPage(
                                                   "Accepts .csv file type and must contain at least 12 unique test points.",
                                                   br(),br(),
                                                   fileInput("upload2B", "File Upload", multiple=F, accept=c(".csv"), width = '400px'),
-                                                  dataTableOutput("createCoeffs2B"),
+                                                  dataTableOutput("createCoeffs2B")
                                            )),
                                          
                                          fluidRow(selectInput("show2", "",
@@ -871,11 +871,11 @@ server <- function(input, output, session) {
   #########################################################
   #choice 1, tested values
   RVChoice1B <- reactiveValues()
-  RVChoice1B$newCoef1B <- data.frame(Capacity = numeric(10),
-                                     Power = numeric(10),
-                                     Current = numeric(10),
+  RVChoice1B$newCoef1B <- data.frame(CAP = numeric(10),
+                                     POW = numeric(10),
+                                     CURR = numeric(10),
                                      CalcMF = numeric(10),
-                                     MeasMF = numeric(10))
+                                     MF = numeric(10))
   
   observeEvent(input$upload1B, {
     req(input$upload1B)
@@ -884,11 +884,11 @@ server <- function(input, output, session) {
     RVChoice1B$uploadDF1B <- RVChoice1B$uploadDF1B[,c("EvapTemp","CondTemp", "MassFlow", "Capacity", "EER",
                                                       "Power", "Current", "MeasMassFlow", "MassFlow")]
     
-    RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Capacity)
-    RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Power)
-    RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Current)
+    RVChoice1B$newCoef1B$CAP <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Capacity)
+    RVChoice1B$newCoef1B$POW <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Power)
+    RVChoice1B$newCoef1B$CURR <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Current)
     RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MassFlow)
-    RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
+    RVChoice1B$newCoef1B$MF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$MeasMassFlow)
     
     CAP <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Capacity)
     POW <- getCooks(RVChoice1B$uploadDF1B$EvapTemp, RVChoice1B$uploadDF1B$CondTemp, RVChoice1B$uploadDF1B$Power)
@@ -938,7 +938,7 @@ server <- function(input, output, session) {
     
   }) #end observe event, upload
   
-  #option to shift curves up or down by %
+  #calculate coeffs
   observeEvent(input$calculate, {
     
     ids <- input$uploadDeleteRows_rows_selected
@@ -951,16 +951,16 @@ server <- function(input, output, session) {
     })
     
     if(length(ids)){
-      RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CAP)
-      RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$POW)
-      RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CURR)
-      RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$MeasMF)
+      RVChoice1B$newCoef1B$CAP <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CAP)
+      RVChoice1B$newCoef1B$POW <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$POW)
+      RVChoice1B$newCoef1B$CURR <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CURR)
+      RVChoice1B$newCoef1B$MF <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$MeasMF)
       RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(filteredDF_selected()$Evap, filteredDF_selected()$Cond, filteredDF_selected()$CalcMF)
     } else {
-      RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CAP)
-      RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$POW)
-      RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CURR)
-      RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$MeasMF)
+      RVChoice1B$newCoef1B$CAP <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CAP)
+      RVChoice1B$newCoef1B$POW <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$POW)
+      RVChoice1B$newCoef1B$CURR <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CURR)
+      RVChoice1B$newCoef1B$MF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$MeasMF)
       RVChoice1B$newCoef1B$CalcMF <- makeCoefficientsWithLM(RVChoice1B$uploadDF1B$Evap, RVChoice1B$uploadDF1B$Cond, RVChoice1B$uploadDF1B$CalcMF)
     }
     
@@ -977,7 +977,7 @@ server <- function(input, output, session) {
       evap = condition[1]
       cond = condition[2]
       
-      shift <- round(curveShift(evap, cond, RVChoice1B$newCoef1B$Capacity,  RVChoice1B$newCoef1B$Power, input$desired2),5)
+      shift <- round(curveShift(evap, cond, RVChoice1B$newCoef1B$CAP,  RVChoice1B$newCoef1B$POW, input$desired2),5)
       
       str1 <- paste("Capacity at", conditionString, ":", shift[3])
       str2 <- paste("Power at", conditionString, ":", shift[4])
@@ -991,11 +991,11 @@ server <- function(input, output, session) {
   observeEvent(input$adjust2, {
     coefAdjust <- isolate(RVChoice1B$newCoef1B)
     coefAdjust <- coefAdjust %>%
-      mutate(Capacity = Capacity*input$adjCap2,
-             Power = Power*input$adjPow2,
-             Current = Current*input$adjPow2,
+      mutate(CAP = CAP*input$adjCap2,
+             POW = POW*input$adjPow2,
+             CURR = CURR*input$adjPow2,
              CalcMF = CalcMF*input$adjCap2,
-             MeasMF = MeasMF*input$adjCap2)
+             MF = MF*input$adjCap2)
     RVChoice1B$newCoef1B <- coefAdjust
     
   })
@@ -1014,10 +1014,10 @@ server <- function(input, output, session) {
       RVChoice1B$one2 <- evap
       RVChoice1B$two2 <- cond
       
-      simCAP2 = mapply(perfCoeff,evap,cond,RVChoice1B$newCoef1B$Capacity[1],RVChoice1B$newCoef1B$Capacity[2],RVChoice1B$newCoef1B$Capacity[3],RVChoice1B$newCoef1B$Capacity[4],RVChoice1B$newCoef1B$Capacity[5],
-                       RVChoice1B$newCoef1B$Capacity[6],RVChoice1B$newCoef1B$Capacity[7],RVChoice1B$newCoef1B$Capacity[8],RVChoice1B$newCoef1B$Capacity[9],RVChoice1B$newCoef1B$Capacity[10])
-      simPOW2 = mapply(perfCoeff,evap,cond,RVChoice1B$newCoef1B$Power[1],RVChoice1B$newCoef1B$Power[2],RVChoice1B$newCoef1B$Power[3],RVChoice1B$newCoef1B$Power[4],RVChoice1B$newCoef1B$Power[5],
-                       RVChoice1B$newCoef1B$Power[6],RVChoice1B$newCoef1B$Power[7],RVChoice1B$newCoef1B$Power[8],RVChoice1B$newCoef1B$Power[9],RVChoice1B$newCoef1B$Power[10])
+      simCAP2 = mapply(perfCoeff,evap,cond,RVChoice1B$newCoef1B$CAP[1],RVChoice1B$newCoef1B$CAP[2],RVChoice1B$newCoef1B$CAP[3],RVChoice1B$newCoef1B$CAP[4],RVChoice1B$newCoef1B$CAP[5],
+                       RVChoice1B$newCoef1B$CAP[6],RVChoice1B$newCoef1B$CAP[7],RVChoice1B$newCoef1B$CAP[8],RVChoice1B$newCoef1B$CAP[9],RVChoice1B$newCoef1B$CAP[10])
+      simPOW2 = mapply(perfCoeff,evap,cond,RVChoice1B$newCoef1B$POW[1],RVChoice1B$newCoef1B$POW[2],RVChoice1B$newCoef1B$POW[3],RVChoice1B$newCoef1B$POW[4],RVChoice1B$newCoef1B$POW[5],
+                       RVChoice1B$newCoef1B$POW[6],RVChoice1B$newCoef1B$POW[7],RVChoice1B$newCoef1B$POW[8],RVChoice1B$newCoef1B$POW[9],RVChoice1B$newCoef1B$POW[10])
       xpow2 = (simCAP2/input$desir2)/simPOW2
       secPtPOW2 <- xpow2*simPOW2
       RVChoice1B$secs2 <- secPtPOW2
@@ -1032,22 +1032,22 @@ server <- function(input, output, session) {
     rval2 <- reactiveValues(df2 = data.frame(evap = c(50,55,50,50,50,50,35,30,30,45,10,45,50,35,40),
                                              cond = c(75,90,80,90,100,115,100,100,105,100,90,80,105,80,90)))
     
-    rval2$df2$Capacity <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$Capacity[1],
-                                 RVChoice1B$newCoef1B$Capacity[2],RVChoice1B$newCoef1B$Capacity[3],RVChoice1B$newCoef1B$Capacity[4],
-                                 RVChoice1B$newCoef1B$Capacity[5],RVChoice1B$newCoef1B$Capacity[6],RVChoice1B$newCoef1B$Capacity[7],
-                                 RVChoice1B$newCoef1B$Capacity[8],RVChoice1B$newCoef1B$Capacity[9],RVChoice1B$newCoef1B$Capacity[10])
-    rval2$df2$Power <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$Power[1],
-                              RVChoice1B$newCoef1B$Power[2],RVChoice1B$newCoef1B$Power[3],RVChoice1B$newCoef1B$Power[4],
-                              RVChoice1B$newCoef1B$Power[5],RVChoice1B$newCoef1B$Power[6],RVChoice1B$newCoef1B$Power[7],
-                              RVChoice1B$newCoef1B$Power[8],RVChoice1B$newCoef1B$Power[9],RVChoice1B$newCoef1B$Power[10])
-    rval2$df2$Current <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$Current[1],
-                                RVChoice1B$newCoef1B$Current[2],RVChoice1B$newCoef1B$Current[3],RVChoice1B$newCoef1B$Current[4],
-                                RVChoice1B$newCoef1B$Current[5],RVChoice1B$newCoef1B$Current[6],RVChoice1B$newCoef1B$Current[7],
-                                RVChoice1B$newCoef1B$Current[8],RVChoice1B$newCoef1B$Current[9],RVChoice1B$newCoef1B$Current[10])
-    rval2$df2$MeasMF <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$MeasMF[1],
-                               RVChoice1B$newCoef1B$MeasMF[2],RVChoice1B$newCoef1B$MeasMF[3],RVChoice1B$newCoef1B$MeasMF[4],
-                               RVChoice1B$newCoef1B$MeasMF[5],RVChoice1B$newCoef1B$MeasMF[6],RVChoice1B$newCoef1B$MeasMF[7],
-                               RVChoice1B$newCoef1B$MeasMF[8],RVChoice1B$newCoef1B$MeasMF[9],RVChoice1B$newCoef1B$MeasMF[10])
+    rval2$df2$Capacity <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$CAP[1],
+                                 RVChoice1B$newCoef1B$CAP[2],RVChoice1B$newCoef1B$CAP[3],RVChoice1B$newCoef1B$CAP[4],
+                                 RVChoice1B$newCoef1B$CAP[5],RVChoice1B$newCoef1B$CAP[6],RVChoice1B$newCoef1B$CAP[7],
+                                 RVChoice1B$newCoef1B$CAP[8],RVChoice1B$newCoef1B$CAP[9],RVChoice1B$newCoef1B$CAP[10])
+    rval2$df2$Power <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$POW[1],
+                              RVChoice1B$newCoef1B$POW[2],RVChoice1B$newCoef1B$POW[3],RVChoice1B$newCoef1B$POW[4],
+                              RVChoice1B$newCoef1B$POW[5],RVChoice1B$newCoef1B$POW[6],RVChoice1B$newCoef1B$POW[7],
+                              RVChoice1B$newCoef1B$POW[8],RVChoice1B$newCoef1B$POW[9],RVChoice1B$newCoef1B$POW[10])
+    rval2$df2$Current <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$CURR[1],
+                                RVChoice1B$newCoef1B$CURR[2],RVChoice1B$newCoef1B$CURR[3],RVChoice1B$newCoef1B$CURR[4],
+                                RVChoice1B$newCoef1B$CURR[5],RVChoice1B$newCoef1B$CURR[6],RVChoice1B$newCoef1B$CURR[7],
+                                RVChoice1B$newCoef1B$CURR[8],RVChoice1B$newCoef1B$CURR[9],RVChoice1B$newCoef1B$CURR[10])
+    rval2$df2$MeasMF <- mapply(perfCoeff,rval2$df2$evap,rval2$df2$cond,RVChoice1B$newCoef1B$MF[1],
+                               RVChoice1B$newCoef1B$MF[2],RVChoice1B$newCoef1B$MF[3],RVChoice1B$newCoef1B$MF[4],
+                               RVChoice1B$newCoef1B$MF[5],RVChoice1B$newCoef1B$MF[6],RVChoice1B$newCoef1B$MF[7],
+                               RVChoice1B$newCoef1B$MF[8],RVChoice1B$newCoef1B$MF[9],RVChoice1B$newCoef1B$MF[10])
     test2 <- round(rval2$df2,10)
     test2[nrow(test2)+1,] <- NA
     
@@ -1071,10 +1071,10 @@ server <- function(input, output, session) {
     test2[nrow(test2),] <- subAndReplace2
     
     #make coefficients with lm
-    RVChoice1B$newCoef1B$Capacity <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Capacity)
-    RVChoice1B$newCoef1B$Power <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Power)
-    RVChoice1B$newCoef1B$Current <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Current)
-    RVChoice1B$newCoef1B$MeasMF <- makeCoefficientsWithLM(test2$evap, test2$cond,  test2$MeasMF)
+    RVChoice1B$newCoef1B$CAP <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Capacity)
+    RVChoice1B$newCoef1B$POW <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Power)
+    RVChoice1B$newCoef1B$CURR <- makeCoefficientsWithLM(test2$evap, test2$cond, test2$Current)
+    RVChoice1B$newCoef1B$MF <- makeCoefficientsWithLM(test2$evap, test2$cond,  test2$MeasMF)
     
     RVChoice1B$newCoef1B <- round(RVChoice1B$newCoef1B,10)
     RVChoice1B$df2 <- test2
@@ -1100,10 +1100,10 @@ server <- function(input, output, session) {
       mutate(evap = rep_len(evapPlot, numTotal),
              cond = rep_len(condPlot, numTotal))
     
-    capPlotVals1B$Capacity <- mapply(perfCoeff,capPlotVals1B$evap,capPlotVals1B$cond,RVChoice1B$newCoef1B$Capacity[1],
-                                     RVChoice1B$newCoef1B$Capacity[2],RVChoice1B$newCoef1B$Capacity[3],RVChoice1B$newCoef1B$Capacity[4],
-                                     RVChoice1B$newCoef1B$Capacity[5],RVChoice1B$newCoef1B$Capacity[6],RVChoice1B$newCoef1B$Capacity[7],
-                                     RVChoice1B$newCoef1B$Capacity[8],RVChoice1B$newCoef1B$Capacity[9],RVChoice1B$newCoef1B$Capacity[10])
+    capPlotVals1B$Capacity <- mapply(perfCoeff,capPlotVals1B$evap,capPlotVals1B$cond,RVChoice1B$newCoef1B$CAP[1],
+                                     RVChoice1B$newCoef1B$CAP[2],RVChoice1B$newCoef1B$CAP[3],RVChoice1B$newCoef1B$CAP[4],
+                                     RVChoice1B$newCoef1B$CAP[5],RVChoice1B$newCoef1B$CAP[6],RVChoice1B$newCoef1B$CAP[7],
+                                     RVChoice1B$newCoef1B$CAP[8],RVChoice1B$newCoef1B$CAP[9],RVChoice1B$newCoef1B$CAP[10])
     
     output$capCurve1B = renderPlot({
       ggplot(capPlotVals1B, aes(x=evap, y=Capacity, color=factor(cond))) +
@@ -1121,10 +1121,10 @@ server <- function(input, output, session) {
       mutate(evap = rep_len(evapPlot, numTotal),
              cond = rep_len(condPlot, numTotal))
     
-    powPlotVals1B$Power <- mapply(perfCoeff,powPlotVals1B$evap,powPlotVals1B$cond,RVChoice1B$newCoef1B$Power[1],
-                                  RVChoice1B$newCoef1B$Power[2],RVChoice1B$newCoef1B$Power[3],RVChoice1B$newCoef1B$Power[4],
-                                  RVChoice1B$newCoef1B$Power[5],RVChoice1B$newCoef1B$Power[6],RVChoice1B$newCoef1B$Power[7],
-                                  RVChoice1B$newCoef1B$Power[8],RVChoice1B$newCoef1B$Power[9],RVChoice1B$newCoef1B$Power[10])
+    powPlotVals1B$Power <- mapply(perfCoeff,powPlotVals1B$evap,powPlotVals1B$cond,RVChoice1B$newCoef1B$POW[1],
+                                  RVChoice1B$newCoef1B$POW[2],RVChoice1B$newCoef1B$POW[3],RVChoice1B$newCoef1B$POW[4],
+                                  RVChoice1B$newCoef1B$POW[5],RVChoice1B$newCoef1B$POW[6],RVChoice1B$newCoef1B$POW[7],
+                                  RVChoice1B$newCoef1B$POW[8],RVChoice1B$newCoef1B$POW[9],RVChoice1B$newCoef1B$POW[10])
     
     output$powCurve1B = renderPlot({
       ggplot(powPlotVals1B, aes(x=evap, y=Power, color=factor(cond))) +
@@ -1142,10 +1142,10 @@ server <- function(input, output, session) {
       mutate(evap = rep_len(evapPlot, numTotal),
              cond = rep_len(condPlot, numTotal))
     
-    currPlotVals1B$Current <- mapply(perfCoeff,currPlotVals1B$evap,currPlotVals1B$cond,RVChoice1B$newCoef1B$Current[1],
-                                     RVChoice1B$newCoef1B$Current[2],RVChoice1B$newCoef1B$Current[3],RVChoice1B$newCoef1B$Current[4],
-                                     RVChoice1B$newCoef1B$Current[5],RVChoice1B$newCoef1B$Current[6],RVChoice1B$newCoef1B$Current[7],
-                                     RVChoice1B$newCoef1B$Current[8],RVChoice1B$newCoef1B$Current[9],RVChoice1B$newCoef1B$Current[10])
+    currPlotVals1B$Current <- mapply(perfCoeff,currPlotVals1B$evap,currPlotVals1B$cond,RVChoice1B$newCoef1B$CURR[1],
+                                     RVChoice1B$newCoef1B$CURR[2],RVChoice1B$newCoef1B$CURR[3],RVChoice1B$newCoef1B$CURR[4],
+                                     RVChoice1B$newCoef1B$CURR[5],RVChoice1B$newCoef1B$CURR[6],RVChoice1B$newCoef1B$CURR[7],
+                                     RVChoice1B$newCoef1B$CURR[8],RVChoice1B$newCoef1B$CURR[9],RVChoice1B$newCoef1B$CURR[10])
     
     output$currCurve1B = renderPlot({
       ggplot(currPlotVals1B, aes(x=evap, y=Current, color=factor(cond))) +
@@ -1181,10 +1181,10 @@ server <- function(input, output, session) {
       mutate(evap = rep_len(evapPlot, numTotal),
              cond = rep_len(condPlot, numTotal))
     
-    measMFPlotVals1B$MeasMF <- mapply(perfCoeff,measMFPlotVals1B$evap,measMFPlotVals1B$cond,RVChoice1B$newCoef1B$MeasMF[1],
-                                      RVChoice1B$newCoef1B$MeasMF[2],RVChoice1B$newCoef1B$MeasMF[3],RVChoice1B$newCoef1B$MeasMF[4],
-                                      RVChoice1B$newCoef1B$MeasMF[5],RVChoice1B$newCoef1B$MeasMF[6],RVChoice1B$newCoef1B$MeasMF[7],
-                                      RVChoice1B$newCoef1B$MeasMF[8],RVChoice1B$newCoef1B$MeasMF[9],RVChoice1B$newCoef1B$MeasMF[10])
+    measMFPlotVals1B$MeasMF <- mapply(perfCoeff,measMFPlotVals1B$evap,measMFPlotVals1B$cond,RVChoice1B$newCoef1B$MF[1],
+                                      RVChoice1B$newCoef1B$MF[2],RVChoice1B$newCoef1B$MF[3],RVChoice1B$newCoef1B$MF[4],
+                                      RVChoice1B$newCoef1B$MF[5],RVChoice1B$newCoef1B$MF[6],RVChoice1B$newCoef1B$MF[7],
+                                      RVChoice1B$newCoef1B$MF[8],RVChoice1B$newCoef1B$MF[9],RVChoice1B$newCoef1B$MF[10])
     
     output$measMFCurve1B = renderPlot({
       ggplot(measMFPlotVals1B, aes(x=evap, y=MeasMF, color=factor(cond))) +
@@ -1786,7 +1786,7 @@ server <- function(input, output, session) {
     pastedCoeffs2B <- data.frame(CAP = pasted2B[1:10],
                                  POW = pasted2B[11:20],
                                  CURR = pasted2B[21:30],
-                                 MeasMF = pasted2B[31:40])
+                                 MF = pasted2B[31:40])
     
     RV3$pastedCoeffs2B <- pastedCoeffs2B
     
@@ -1797,47 +1797,47 @@ server <- function(input, output, session) {
     })#end output
   })
   
-  #pull from Create tab, if coefs were pasted
-  observeEvent(input$pullPrev2, {
-    RV3$pastedCoeffs2B <- RV$pastedCoeffs1
-    
-    output$table2B = renderDataTable({
-      datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
-                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
-                options=list(dom='t', ordering=F))
-    })#end output
-    
-  })
-  
-  #pull from Create tab, if coefs were made from ELT
-  observeEvent(input$pullPrevELT2, {
-    RV3$pastedCoeffs2B <- RVChoice1B$newCoef1B
-    
-    output$table2B = renderDataTable({
-      datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
-                callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
-                options=list(dom='t', ordering=F))
-    })#end output
-    
-  })
+  # #pull from Create tab, if coefs were pasted
+  # observeEvent(input$pullPrev2, {
+  #   RV3$pastedCoeffs2B <- RV$pastedCoeffs1
+  #   
+  #   output$table2B = renderDataTable({
+  #     datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
+  #               callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+  #               options=list(dom='t', ordering=F))
+  #   })#end output
+  #   
+  # })
+  # 
+  # #pull from Create tab, if coefs were made from ELT
+  # observeEvent(input$pullPrevELT2, {
+  #   RV3$pastedCoeffs2B <- RVChoice1B$newCoef1B
+  #   
+  #   output$table2B = renderDataTable({
+  #     datatable(RV3$pastedCoeffs2B, rownames=F, selection='none',filter='none', 
+  #               callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
+  #               options=list(dom='t', ordering=F))
+  #   })#end output
+  # 
+  # })
   
   observeEvent(input$upload2B, {
     req(input$upload2B)
     uploadDF2B <- read_csv(input$upload2B$datapath)
     #create coefficients
-    newCoef2B <- data.frame(CAP = numeric(10),
+    RV3$newCoef2B <- data.frame(CAP = numeric(10),
                             POW = numeric(10),
                             CURR = numeric(10),
                             MeasMF = numeric(10))
     
-    newCoef2B$CAP <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Capacity)
-    newCoef2B$POW <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Power)
-    newCoef2B$CURR <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Current)
-    newCoef2B$MeasMF <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$MeasMassFlow)
-    newCoef2B <- round(newCoef2B, 10)
+    RV3$newCoef2B$CAP <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Capacity)
+    RV3$newCoef2B$POW <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Power)
+    RV3$newCoef2B$CURR <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$Current)
+    RV3$newCoef2B$MeasMF <- makeCoefficientsWithLM(uploadDF2B$EvapTemp, uploadDF2B$CondTemp, uploadDF2B$MeasMassFlow)
+    RV3$newCoef2B <- round(RV3$newCoef2B, 10)
     
     output$createCoeffs2B = renderDataTable({
-      datatable(newCoef2B, rownames=F, selection='none',filter='none', 
+      datatable(RV3$newCoef2B, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                 options=list(dom='t', ordering=F))
     })#end output
@@ -1882,10 +1882,10 @@ server <- function(input, output, session) {
                                        RV3$pastedCoeffs2B$CURR[2],RV3$pastedCoeffs2B$CURR[3],RV3$pastedCoeffs2B$CURR[4],
                                        RV3$pastedCoeffs2B$CURR[5],RV3$pastedCoeffs2B$CURR[6],RV3$pastedCoeffs2B$CURR[7],
                                        RV3$pastedCoeffs2B$CURR[8],RV3$pastedCoeffs2B$CURR[9],RV3$pastedCoeffs2B$CURR[10])
-    comparisonDF2B$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MeasMF[1],
-                                         RV3$pastedCoeffs2B$MeasMF[2],RV3$pastedCoeffs2B$MeasMF[3],RV3$pastedCoeffs2B$MeasMF[4],
-                                         RV3$pastedCoeffs2B$MeasMF[5],RV3$pastedCoeffs2B$MeasMF[6],RV3$pastedCoeffs2B$MeasMF[7],
-                                         RV3$pastedCoeffs2B$MeasMF[8],RV3$pastedCoeffs2B$MeasMF[9],RV3$pastedCoeffs2B$MeasMF[10])
+    comparisonDF2B$MeasMF_Mod1 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$pastedCoeffs2B$MF[1],
+                                         RV3$pastedCoeffs2B$MF[2],RV3$pastedCoeffs2B$MF[3],RV3$pastedCoeffs2B$MF[4],
+                                         RV3$pastedCoeffs2B$MF[5],RV3$pastedCoeffs2B$MF[6],RV3$pastedCoeffs2B$MF[7],
+                                         RV3$pastedCoeffs2B$MF[8],RV3$pastedCoeffs2B$MF[9],RV3$pastedCoeffs2B$MF[10])
     #calcs calc mf
     calcMF3 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
     calcMF3$PSuc = mapply(refprope,'P','T',comparisonDF2B$Evap,'Q',1,input$refrigerant2)
@@ -1917,23 +1917,23 @@ server <- function(input, output, session) {
     comparisonDF2B$VolEffy_Mod1 <- volTemp3$volEffy
     
     ##### second set, created from uploaded test data
-    comparisonDF2B$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CAP[1],
-                                      newCoef2B$CAP[2],newCoef2B$CAP[3],newCoef2B$CAP[4],
-                                      newCoef2B$CAP[5],newCoef2B$CAP[6],newCoef2B$CAP[7],
-                                      newCoef2B$CAP[8],newCoef2B$CAP[9],newCoef2B$CAP[10])
-    comparisonDF2B$POW_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$POW[1],
-                                      newCoef2B$POW[2],newCoef2B$POW[3],newCoef2B$POW[4],
-                                      newCoef2B$POW[5],newCoef2B$POW[6],newCoef2B$POW[7],
-                                      newCoef2B$POW[8],newCoef2B$POW[9],newCoef2B$POW[10])
+    comparisonDF2B$CAP_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$newCoef2B$CAP[1],
+                                      RV3$newCoef2B$CAP[2],RV3$newCoef2B$CAP[3],RV3$newCoef2B$CAP[4],
+                                      RV3$newCoef2B$CAP[5],RV3$newCoef2B$CAP[6],RV3$newCoef2B$CAP[7],
+                                      RV3$newCoef2B$CAP[8],RV3$newCoef2B$CAP[9],RV3$newCoef2B$CAP[10])
+    comparisonDF2B$POW_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$newCoef2B$POW[1],
+                                      RV3$newCoef2B$POW[2],RV3$newCoef2B$POW[3],RV3$newCoef2B$POW[4],
+                                      RV3$newCoef2B$POW[5],RV3$newCoef2B$POW[6],RV3$newCoef2B$POW[7],
+                                      RV3$newCoef2B$POW[8],RV3$newCoef2B$POW[9],RV3$newCoef2B$POW[10])
     comparisonDF2B$EER_Mod2 <- comparisonDF2B$CAP_Mod2 / comparisonDF2B$POW_Mod2
-    comparisonDF2B$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$CURR[1],
-                                       newCoef2B$CURR[2],newCoef2B$CURR[3],newCoef2B$CURR[4],
-                                       newCoef2B$CURR[5],newCoef2B$CURR[6],newCoef2B$CURR[7],
-                                       newCoef2B$CURR[8],newCoef2B$CURR[9],newCoef2B$CURR[10])
-    comparisonDF2B$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,newCoef2B$MeasMF[1],
-                                         newCoef2B$MeasMF[2],newCoef2B$MeasMF[3],newCoef2B$MeasMF[4],
-                                         newCoef2B$MeasMF[5],newCoef2B$MeasMF[6],newCoef2B$MeasMF[7],
-                                         newCoef2B$MeasMF[8],newCoef2B$MeasMF[9],newCoef2B$MeasMF[10])
+    comparisonDF2B$CURR_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$newCoef2B$CURR[1],
+                                       RV3$newCoef2B$CURR[2],RV3$newCoef2B$CURR[3],RV3$newCoef2B$CURR[4],
+                                       RV3$newCoef2B$CURR[5],RV3$newCoef2B$CURR[6],RV3$newCoef2B$CURR[7],
+                                       RV3$newCoef2B$CURR[8],RV3$newCoef2B$CURR[9],RV3$newCoef2B$CURR[10])
+    comparisonDF2B$MeasMF_Mod2 <- mapply(perfCoeff,comparisonDF2B$Evap,comparisonDF2B$Cond,RV3$newCoef2B$MeasMF[1],
+                                         RV3$newCoef2B$MeasMF[2],RV3$newCoef2B$MeasMF[3],RV3$newCoef2B$MeasMF[4],
+                                         RV3$newCoef2B$MeasMF[5],RV3$newCoef2B$MeasMF[6],RV3$newCoef2B$MeasMF[7],
+                                         RV3$newCoef2B$MeasMF[8],RV3$newCoef2B$MeasMF[9],RV3$newCoef2B$MeasMF[10])
     
     #calcs calc mf
     calcMF4 <- data.frame(PSuc = numeric(length(comparisonDF2B$Evap)))
