@@ -198,14 +198,15 @@ ui <- fluidPage(
                                          fluidRow(
                                            column(7,
                                                   h4("Load Coefficients"),br(),
-                                                  tags$head(
-                                                    tags$style(HTML('#paste{background-color:#98FB98}'))
-                                                  ),
-                                                  actionButton("paste", "Paste"),br(),
+                                                  # tags$head(
+                                                  #   tags$style(HTML('#paste{background-color:#98FB98}'))
+                                                  # ),
+                                                  actionButton("paste", "Paste", style="background-color:#98FB98"),br(),
                                                   strong("To copy:"),
                                                   "Unprotect sheet, select cells, change type to 'number',", br(),
                                                   "increase # decimals (important!) to desired number, press ctrl+c. (See 'About' tab for more details)",br(),br(),
                                                   dataTableOutput("table1A", width='100px'),br(),
+                                                  textOutput("reminder"),
                                                   style='padding-left:50px;'
                                            ),
                                            column(5,
@@ -501,18 +502,17 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # session$onSessionEnded(function() {
-  #   stopApp()
-  #   q("no")
-  # })
+  session$onSessionEnded(function() {
+    stopApp()
+    q("no")
+  })
   
   #########################################################
   
   RV <- reactiveValues()
-  
+ 
   #choice 1, coefficients
   observeEvent(input$paste, {
-    
     #coefficients table output
     pasted1A <- readClipboard()
     pasted1A <- as.numeric(unlist((strsplit(pasted1A, split = "\t"))))
@@ -541,6 +541,9 @@ server <- function(input, output, session) {
       datatable(RV$pastedCoeffs1, rownames=F, selection='none',filter='none', 
                 callback = JS("$('table.dataTable.no-footer').css('border-bottom', 'none');"),
                 options=list(dom='t', ordering=F, digits=10))
+    })
+    output$reminder = renderText({
+      "Reminder: Input correct displacement value before starting manipulation."
     })
     
     #calculate curve % shift (50/115)
@@ -1368,7 +1371,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$compare, {
-
+browser()
     #create envelope
     if(input$envel == 'custom') {
       evapEnv <- input$evapEnvTemps %>%
